@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config-schema.json",
+  "identifier": "default",
+  "description": "Default capabilities for StockFlow POS",
+  "local": true,
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:allow-appdata-read",
+    "fs:allow-appdata-write",
+    "fs:allow-download-read",
+    "fs:allow-download-write"
+  ]
+}

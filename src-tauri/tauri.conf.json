@@ -1,0 +1,80 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config-schema.json",
+  "productName": "StockFlow POS",
+  "version": "1.0.0",
+  "identifier": "com.stockflow.pos",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "StockFlow POS",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 1200,
+        "minHeight": 700,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "visible": true,
+        "focus": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "capabilities": ["default"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "tsp": false,
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "wix": {
+        "language": "en-US"
+      },
+      "nsis": {
+        "installerIcon": "icons/icon.ico",
+        "installMode": "both",
+        "startMenuFolder": "StockFlow POS"
+      }
+    },
+    "resources": [],
+    "externalBin": [],
+    "copyright": "© 2024 Hakanene Mosely",
+    "category": "Business",
+    "shortDescription": "Inventory Management & POS System",
+    "longDescription": "StockFlow POS is a modern offline-first inventory management and point-of-sale system designed for small to medium businesses.",
+    "macOS": {
+      "frameworks": [],
+      "minimumSystemVersion": "10.13",
+      "entitlements": null
+    },
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    }
+  }
+}

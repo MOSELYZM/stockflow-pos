@@ -1,0 +1,1 @@
+{"name":"StockFlow Store","short_name":"StockFlow","description":"Offline Inventory Management","start_url":"/","display":"standalone","background_color":"#ffffff","theme_color":"#ffffff","lang":"en","scope":"/","icons":[{"src":"/stockflow-logo.png","sizes":"192x192","type":"image/png"},{"src":"/stockflow-logo.png","sizes":"512x512","type":"image/png"}]}
