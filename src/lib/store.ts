@@ -1,5 +1,4 @@
-// Supabase-based data store for StockFlow inventory management
-import { supabase } from './supabase';
+// localStorage-based data store for StockFlow inventory management
 
 export interface Product {
   id: string;
@@ -67,417 +66,181 @@ export interface MobileMoneyTransaction {
   status: "completed" | "pending" | "failed";
 }
 
+const KEYS = {
+  products: "sf_v2_products",
+  sales: "sf_v2_sales",
+  expenses: "sf_v2_expenses",
+  customers: "sf_v2_customers",
+  mobileMoney: "sf_v2_mobile_money",
+  staff: "sf_v2_staff",
+  auth: "sf_v2_auth",
+  admin: "sf_v2_admin",
+  settings: "sf_v2_settings",
+  subscription: "sf_v2_subscription",
+};
+
+function get<T>(key: string, fallback: T[]): T[] {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function set<T>(key: string, data: T[]) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
+// Initial data state (empty for production)
+const initialProducts: Product[] = [];
+const initialSales: Sale[] = [];
+const initialExpenses: Expense[] = [];
+const initialCustomers: Customer[] = [];
+const initialMobileMoney: MobileMoneyTransaction[] = [];
+const initialStaff: Staff[] = [];
+
+// Initialize with empty arrays if not set
+function init() {
+  if (!localStorage.getItem(KEYS.products)) set(KEYS.products, initialProducts);
+  if (!localStorage.getItem(KEYS.sales)) set(KEYS.sales, initialSales);
+  if (!localStorage.getItem(KEYS.expenses)) set(KEYS.expenses, initialExpenses);
+  if (!localStorage.getItem(KEYS.customers)) set(KEYS.customers, initialCustomers);
+  if (!localStorage.getItem(KEYS.mobileMoney)) set(KEYS.mobileMoney, initialMobileMoney);
+  if (!localStorage.getItem(KEYS.staff)) set(KEYS.staff, initialStaff);
+}
+init();
+
 // ---- Products ----
-export const getProducts = async (): Promise<Product[]> => {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data.map(p => ({
-    id: p.id,
-    name: p.name,
-    sku: p.sku,
-    category: p.category,
-    price: Number(p.price),
-    cost: Number(p.cost),
-    stock: p.stock,
-    reorderLevel: p.reorder_level,
-    image: p.image,
-    createdAt: p.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  }));
+export const getProducts = (): Product[] => get<Product>(KEYS.products, initialProducts);
+export const addProduct = (p: Omit<Product, "id" | "createdAt">): Product => {
+  const products = getProducts();
+  const product: Product = { ...p, id: genId(), createdAt: new Date().toISOString().slice(0, 10) };
+  products.push(product);
+  set(KEYS.products, products);
+  return product;
 };
-
-export const addProduct = async (p: Omit<Product, "id" | "createdAt">): Promise<Product> => {
-  const { data, error } = await supabase
-    .from('products')
-    .insert([{
-      name: p.name,
-      sku: p.sku,
-      category: p.category,
-      price: p.price,
-      cost: p.cost,
-      stock: p.stock,
-      reorder_level: p.reorderLevel,
-      image: p.image
-    }])
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    name: data.name,
-    sku: data.sku,
-    category: data.category,
-    price: Number(data.price),
-    cost: Number(data.cost),
-    stock: data.stock,
-    reorderLevel: data.reorder_level,
-    image: data.image,
-    createdAt: data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  };
+export const updateProduct = (id: string, updates: Partial<Product>) => {
+  const products = getProducts().map((p) => (p.id === id ? { ...p, ...updates } : p));
+  set(KEYS.products, products);
 };
-
-export const updateProduct = async (id: string, updates: Partial<Product>) => {
-  const { error } = await supabase
-    .from('products')
-    .update({
-      name: updates.name,
-      sku: updates.sku,
-      category: updates.category,
-      price: updates.price,
-      cost: updates.cost,
-      stock: updates.stock,
-      reorder_level: updates.reorderLevel,
-      image: updates.image
-    })
-    .eq('id', id);
-  if (error) throw error;
-};
-
-export const deleteProduct = async (id: string) => {
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
+export const deleteProduct = (id: string) => {
+  set(KEYS.products, getProducts().filter((p) => p.id !== id));
 };
 
 // ---- Sales ----
-export const getSales = async (): Promise<Sale[]> => {
-  const { data: sales, error: salesError } = await supabase
-    .from('sales')
-    .select('*')
-    .order('date', { ascending: false });
-  if (salesError) throw salesError;
-
-  const salesWithItems: Sale[] = [];
-  for (const sale of sales) {
-    const { data: items, error: itemsError } = await supabase
-      .from('sale_items')
-      .select('*')
-      .eq('sale_id', sale.id);
-    if (itemsError) throw itemsError;
-
-    salesWithItems.push({
-      id: sale.id,
-      date: sale.date,
-      customer: sale.customer,
-      items: items.map(item => ({
-        productId: item.product_id,
-        productName: item.product_name,
-        quantity: item.quantity,
-        price: Number(item.price)
-      })),
-      total: Number(sale.total),
-      paymentMethod: sale.payment_method as any,
-      staffId: sale.staff_id
-    });
-  }
-  return salesWithItems;
-};
-
-export const addSale = async (s: Omit<Sale, "id">): Promise<Sale> => {
+export const getSales = (): Sale[] => get<Sale>(KEYS.sales, initialSales);
+export const addSale = (s: Omit<Sale, "id">): Sale => {
+  const sales = getSales();
   const date = new Date();
   const prefix = `SD${String(date.getDate()).padStart(2, "0")}${String(date.getMonth() + 1).padStart(2, "0")}`;
-  
-  // Get existing sales to generate ID
-  const { data: existingSales } = await supabase
-    .from('sales')
-    .select('id')
-    .ilike('id', `${prefix}%`);
-  const count = (existingSales?.length || 0) + 1;
-  const saleId = `${prefix}-${String(count).padStart(4, "0")}`;
-
-  // Insert sale
-  const { error: saleError } = await supabase
-    .from('sales')
-    .insert([{
-      id: saleId,
-      date: s.date,
-      customer: s.customer,
-      total: s.total,
-      payment_method: s.paymentMethod,
-      staff_id: s.staffId
-    }]);
-  if (saleError) throw saleError;
-
-  // Insert sale items
-  for (const item of s.items) {
-    const { error: itemError } = await supabase
-      .from('sale_items')
-      .insert([{
-        sale_id: saleId,
-        product_id: item.productId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        price: item.price
-      }]);
-    if (itemError) throw itemError;
-  }
-
+  const count = sales.filter((x) => x.id.startsWith(prefix)).length + 1;
+  const sale: Sale = { ...s, id: `${prefix}-${String(count).padStart(4, "0")}` };
+  sales.unshift(sale);
+  set(KEYS.sales, sales);
   // Update stock
-  for (const item of s.items) {
-    const { data: product } = await supabase
-      .from('products')
-      .select('stock')
-      .eq('id', item.productId)
-      .single();
-    if (product) {
-      const newStock = Math.max(0, product.stock - item.quantity);
-      await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', item.productId);
-    }
-  }
+  const products = getProducts();
+  s.items.forEach((item) => {
+    const product = products.find((p) => p.id === item.productId);
+    if (product) product.stock = Math.max(0, product.stock - item.quantity);
+  });
+  set(KEYS.products, products);
 
   // Update customer
   if (s.customer && s.customer !== "Walk-in Customer") {
-    const { data: customer } = await supabase
-      .from('customers')
-      .select('total_spent')
-      .ilike('name', s.customer)
-      .single();
+    const customers = getCustomers();
+    const customer = customers.find((c) => c.name === s.customer);
     if (customer) {
-      await supabase
-        .from('customers')
-        .update({ total_spent: Number(customer.total_spent) + s.total })
-        .eq('id', customer.id);
+      customer.totalSpent += s.total;
+      set(KEYS.customers, customers);
     }
   }
 
-  return { ...s, id: saleId };
+  return sale;
 };
 
 // ---- Expenses ----
-export const getExpenses = async (): Promise<Expense[]> => {
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .order('date', { ascending: false });
-  if (error) throw error;
-  return data.map(e => ({
-    id: e.id,
-    date: e.date,
-    description: e.description,
-    amount: Number(e.amount),
-    category: e.category
-  }));
+export const getExpenses = (): Expense[] => get<Expense>(KEYS.expenses, initialExpenses);
+export const addExpense = (e: Omit<Expense, "id">): Expense => {
+  const expenses = getExpenses();
+  const expense: Expense = { ...e, id: genId() };
+  expenses.unshift(expense);
+  set(KEYS.expenses, expenses);
+  return expense;
 };
-
-export const addExpense = async (e: Omit<Expense, "id">): Promise<Expense> => {
-  const { data, error } = await supabase
-    .from('expenses')
-    .insert([{
-      date: e.date,
-      description: e.description,
-      amount: e.amount,
-      category: e.category
-    }])
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    date: data.date,
-    description: data.description,
-    amount: Number(data.amount),
-    category: data.category
-  };
-};
-
-export const deleteExpense = async (id: string) => {
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
+export const deleteExpense = (id: string) => {
+  set(KEYS.expenses, getExpenses().filter((e) => e.id !== id));
 };
 
 // ---- Customers ----
-export const getCustomers = async (): Promise<Customer[]> => {
-  const { data, error } = await supabase
-    .from('customers')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data.map(c => ({
-    id: c.id,
-    name: c.name,
-    phone: c.phone,
-    email: c.email,
-    totalSpent: Number(c.total_spent),
-    createdAt: c.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  }));
+export const getCustomers = (): Customer[] => get<Customer>(KEYS.customers, initialCustomers);
+export const addCustomer = (c: Omit<Customer, "id" | "totalSpent" | "createdAt">): Customer => {
+  const customers = getCustomers();
+  const customer: Customer = { ...c, id: genId(), totalSpent: 0, createdAt: new Date().toISOString().slice(0, 10) };
+  customers.push(customer);
+  set(KEYS.customers, customers);
+  return customer;
 };
-
-export const addCustomer = async (c: Omit<Customer, "id" | "totalSpent" | "createdAt">): Promise<Customer> => {
-  const { data, error } = await supabase
-    .from('customers')
-    .insert([{
-      name: c.name,
-      phone: c.phone,
-      email: c.email,
-      total_spent: 0
-    }])
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    name: data.name,
-    phone: data.phone,
-    email: data.email,
-    totalSpent: Number(data.total_spent),
-    createdAt: data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  };
-};
-
-export const deleteCustomer = async (id: string) => {
-  const { error } = await supabase
-    .from('customers')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
+export const deleteCustomer = (id: string) => {
+  set(KEYS.customers, getCustomers().filter((c) => c.id !== id));
 };
 
 // ---- Mobile Money ----
-export const getMobileMoneyTransactions = async (): Promise<MobileMoneyTransaction[]> => {
-  const { data, error } = await supabase
-    .from('mobile_money_transactions')
-    .select('*')
-    .order('date', { ascending: false });
-  if (error) throw error;
-  return data.map(m => ({
-    id: m.id,
-    date: m.date,
-    transactionId: m.transaction_id,
-    phone: m.phone,
-    amount: Number(m.amount),
-    status: m.status
-  }));
-};
-
-export const addMobileMoneyTransaction = async (t: Omit<MobileMoneyTransaction, "id">): Promise<MobileMoneyTransaction> => {
-  const { data, error } = await supabase
-    .from('mobile_money_transactions')
-    .insert([{
-      date: t.date,
-      transaction_id: t.transactionId,
-      phone: t.phone,
-      amount: t.amount,
-      status: t.status
-    }])
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    date: data.date,
-    transactionId: data.transaction_id,
-    phone: data.phone,
-    amount: Number(data.amount),
-    status: data.status
-  };
-};
-
-// ---- Staff ----
-export const getStaff = async (): Promise<Staff[]> => {
-  const { data, error } = await supabase
-    .from('staff')
-    .select('*')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data.map(s => ({
-    id: s.id,
-    name: s.name,
-    staffId: s.staff_id,
-    role: s.role,
-    status: s.status,
-    password: s.password,
-    createdAt: s.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  }));
-};
-
-export const addStaff = async (s: Omit<Staff, "id" | "createdAt">): Promise<Staff> => {
-  const { data, error } = await supabase
-    .from('staff')
-    .insert([{
-      name: s.name,
-      staff_id: s.staffId,
-      role: s.role,
-      status: s.status,
-      password: s.password
-    }])
-    .select()
-    .single();
-  if (error) throw error;
-  return {
-    id: data.id,
-    name: data.name,
-    staffId: data.staff_id,
-    role: data.role,
-    status: data.status,
-    password: data.password,
-    createdAt: data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0]
-  };
-};
-
-export const updateStaff = async (id: string, updates: Partial<Staff>) => {
-  const { error } = await supabase
-    .from('staff')
-    .update({
-      name: updates.name,
-      staff_id: updates.staffId,
-      role: updates.role,
-      status: updates.status,
-      password: updates.password
-    })
-    .eq('id', id);
-  if (error) throw error;
-};
-
-export const deleteStaff = async (id: string) => {
-  const { error } = await supabase
-    .from('staff')
-    .delete()
-    .eq('id', id);
-  if (error) throw error;
+export const getMobileMoneyTransactions = (): MobileMoneyTransaction[] => get<MobileMoneyTransaction>(KEYS.mobileMoney, initialMobileMoney);
+export const addMobileMoneyTransaction = (t: Omit<MobileMoneyTransaction, "id">): MobileMoneyTransaction => {
+  const transactions = getMobileMoneyTransactions();
+  const tx: MobileMoneyTransaction = { ...t, id: genId() };
+  transactions.unshift(tx);
+  set(KEYS.mobileMoney, transactions);
+  return tx;
 };
 
 // ---- Auth ----
+export const getStaff = (): Staff[] => get<Staff>(KEYS.staff, initialStaff);
+export const addStaff = (s: Omit<Staff, "id" | "createdAt">): Staff => {
+  const staffs = getStaff();
+  const staff: Staff = { ...s, id: genId(), createdAt: new Date().toISOString().slice(0, 10) };
+  staffs.push(staff);
+  set(KEYS.staff, staffs);
+  return staff;
+};
+export const updateStaff = (id: string, updates: Partial<Staff>) => {
+  const staffs = getStaff().map((s) => (s.id === id ? { ...s, ...updates } : s));
+  set(KEYS.staff, staffs);
+};
+export const deleteStaff = (id: string) => {
+  set(KEYS.staff, getStaff().filter((s) => s.id !== id));
+};
+
 export const login = (role: "admin" | "staff", identifier: string): boolean => {
-  localStorage.setItem('sf_v2_auth', JSON.stringify({ role, identifier, loggedIn: true }));
+  localStorage.setItem(KEYS.auth, JSON.stringify({ role, identifier, loggedIn: true }));
   return true;
 };
-
-export const logout = () => localStorage.removeItem('sf_v2_auth');
-
+export const logout = () => localStorage.removeItem(KEYS.auth);
 export const getAuth = (): { role: string; identifier: string; loggedIn: boolean } | null => {
   try {
-    const data = localStorage.getItem('sf_v2_auth');
+    const data = localStorage.getItem(KEYS.auth);
     return data ? JSON.parse(data) : null;
   } catch {
     return null;
   }
 };
 
-export const getAdminAccount = async (): Promise<any> => {
+export const getAdminAccount = (): any => {
   try {
-    const data = localStorage.getItem('sf_v2_admin');
+    const data = localStorage.getItem(KEYS.admin);
     return data ? JSON.parse(data) : null;
   } catch {
     return null;
   }
 };
 
-export const saveAdminAccount = async (account: any) => {
-  localStorage.setItem('sf_v2_admin', JSON.stringify({ ...account, registered: true }));
+export const saveAdminAccount = (account: any) => {
+  localStorage.setItem(KEYS.admin, JSON.stringify({ ...account, registered: true }));
 };
 
 // ---- Settings ----
@@ -511,99 +274,52 @@ const defaultSettings: AppSettings = {
   logo: "",
 };
 
-export const getSettings = async (): Promise<AppSettings> => {
-  const { data, error } = await supabase
-    .from('settings')
-    .select('*')
-    .eq('id', 'default')
-    .single();
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No settings found, return defaults
-      return defaultSettings;
-    }
-    throw error;
+export const getSettings = (): AppSettings => {
+  try {
+    const data = localStorage.getItem(KEYS.settings);
+    return data ? JSON.parse(data) : defaultSettings;
+  } catch {
+    return defaultSettings;
   }
-  return {
-    businessName: data.business_name,
-    location: data.location,
-    currency: data.currency,
-    taxRate: Number(data.tax_rate),
-    lowStockThreshold: data.low_stock_threshold,
-    mtnNumber: data.mtn_number,
-    mtnName: data.mtn_name,
-    airtelNumber: data.airtel_number,
-    airtelName: data.airtel_name,
-    zamtelNumber: data.zamtel_number,
-    zamtelName: data.zamtel_name,
-    logo: data.logo,
-  };
 };
-
-export const saveSettings = async (s: AppSettings) => {
-  const { error } = await supabase
-    .from('settings')
-    .upsert([{
-      id: 'default',
-      business_name: s.businessName,
-      location: s.location,
-      currency: s.currency,
-      tax_rate: s.taxRate,
-      low_stock_threshold: s.lowStockThreshold,
-      mtn_number: s.mtnNumber,
-      mtn_name: s.mtnName,
-      airtel_number: s.airtelNumber,
-      airtel_name: s.airtelName,
-      zamtel_number: s.zamtelNumber,
-      zamtel_name: s.zamtelName,
-      logo: s.logo,
-    }]);
-  if (error) throw error;
-};
+export const saveSettings = (s: AppSettings) => localStorage.setItem(KEYS.settings, JSON.stringify(s));
 
 // ---- Dashboard helpers ----
-export const getTodaySales = async (): Promise<Sale[]> => {
+export const getTodaySales = (): Sale[] => {
   const today = new Date().toISOString().slice(0, 10);
-  const sales = await getSales();
-  return sales.filter((s) => s.date.startsWith(today));
+  return getSales().filter((s) => s.date.startsWith(today));
 };
 
-export const getTodayExpenses = async (): Promise<Expense[]> => {
+export const getTodayExpenses = (): Expense[] => {
   const today = new Date().toISOString().slice(0, 10);
-  const expenses = await getExpenses();
-  return expenses.filter((e) => e.date.startsWith(today));
+  return getExpenses().filter((e) => e.date.startsWith(today));
 };
 
-export const getLowStockProducts = async (): Promise<Product[]> => {
-  const threshold = (await getSettings()).lowStockThreshold;
-  const products = await getProducts();
-  return products.filter((p) => p.stock <= threshold);
+export const getLowStockProducts = (): Product[] => {
+  const threshold = getSettings().lowStockThreshold;
+  return getProducts().filter((p) => p.stock <= threshold);
 };
 
-export const getLast7DaysData = async () => {
+export const getLast7DaysData = () => {
   const days: { day: string; date: string; sales: number; expenses: number }[] = [];
-  const sales = await getSales();
-  const expenses = await getExpenses();
-  
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
     const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
-    const daySales = sales.filter((s) => s.date.startsWith(dateStr)).reduce((sum, s) => sum + s.total, 0);
-    const dayExpenses = expenses.filter((e) => e.date.startsWith(dateStr)).reduce((sum, e) => sum + e.amount, 0);
+    const daySales = getSales().filter((s) => s.date.startsWith(dateStr)).reduce((sum, s) => sum + s.total, 0);
+    const dayExpenses = getExpenses().filter((e) => e.date.startsWith(dateStr)).reduce((sum, e) => sum + e.amount, 0);
     days.push({ day: dayName, date: dateStr, sales: daySales, expenses: dayExpenses });
   }
   return days;
 };
 
-export const getTopProducts = async (days = 7) => {
+export const getTopProducts = (days = 7) => {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
-  const sales = await getSales();
-  const filteredSales = sales.filter((s) => new Date(s.date) >= cutoff);
+  const sales = getSales().filter((s) => new Date(s.date) >= cutoff);
   const productTotals: Record<string, { name: string; total: number }> = {};
-  filteredSales.forEach((s) =>
+  sales.forEach((s) =>
     s.items.forEach((item) => {
       if (!productTotals[item.productId]) productTotals[item.productId] = { name: item.productName, total: 0 };
       productTotals[item.productId].total += item.price * item.quantity;
@@ -612,15 +328,14 @@ export const getTopProducts = async (days = 7) => {
   return Object.values(productTotals).sort((a, b) => b.total - a.total).slice(0, 5);
 };
 
-export const getTodayMobileMoney = async (): Promise<number> => {
+export const getTodayMobileMoney = (): number => {
   const today = new Date().toISOString().slice(0, 10);
-  const transactions = await getMobileMoneyTransactions();
-  return transactions
+  return getMobileMoneyTransactions()
     .filter((m) => m.date.startsWith(today) && m.status === "completed")
     .reduce((sum, m) => sum + m.amount, 0);
 };
 
-// ---- Subscription Management (keep using localStorage for now) ----
+// ---- Subscription Management ----
 export type SubscriptionTier = "trial" | "basic" | "premium";
 export type SubscriptionStatus = "active" | "expired" | "cancelled";
 
@@ -633,7 +348,7 @@ export interface Subscription {
   subscriptionStartDate?: string;
   subscriptionEndDate?: string;
   lastPaymentDate?: string;
-  monthlyFee: number;
+  monthlyFee: number; // in ZMW
   paymentHistory: PaymentRecord[];
   autoRenew: boolean;
 }
@@ -650,11 +365,24 @@ export interface PaymentRecord {
 }
 
 const TRIAL_DAYS = 7;
-const MONTHLY_FEE = 200;
+const MONTHLY_FEE = 200; // ZMW
+
+function getSingle<T>(key: string, fallback: T | null = null): T | null {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function setSingle<T>(key: string, data: T) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
 
 export const initializeSubscription = (): Subscription => {
-  const existing = localStorage.getItem('sf_v2_subscription');
-  if (existing) return JSON.parse(existing);
+  const existing = getSingle<Subscription>(KEYS.subscription);
+  if (existing) return existing;
 
   const now = new Date();
   const trialEnd = new Date(now);
@@ -671,14 +399,35 @@ export const initializeSubscription = (): Subscription => {
     autoRenew: true,
   };
 
-  localStorage.setItem('sf_v2_subscription', JSON.stringify(subscription));
+  setSingle(KEYS.subscription, subscription);
   return subscription;
 };
 
 export const getSubscription = (): Subscription => {
-  const sub = localStorage.getItem('sf_v2_subscription');
+  const sub = getSingle<Subscription>(KEYS.subscription);
   if (!sub) return initializeSubscription();
-  return JSON.parse(sub);
+
+  // Check if trial expired
+  if (sub.tier === "trial" && sub.status === "active") {
+    const now = new Date();
+    const trialEnd = new Date(sub.trialEndDate);
+    if (now > trialEnd) {
+      sub.status = "expired";
+      setSingle(KEYS.subscription, sub);
+    }
+  }
+
+  // Check if subscription expired
+  if ((sub.tier === "basic" || sub.tier === "premium") && sub.status === "active" && sub.subscriptionEndDate) {
+    const now = new Date();
+    const endDate = new Date(sub.subscriptionEndDate);
+    if (now > endDate) {
+      sub.status = "expired";
+      setSingle(KEYS.subscription, sub);
+    }
+  }
+
+  return sub;
 };
 
 export const isSubscriptionActive = (): boolean => {
@@ -748,6 +497,7 @@ export const processPayment = (
     monthsPaid: months,
   };
 
+  // Calculate new end date
   let endDate = new Date(now);
   if (sub.subscriptionEndDate && sub.status === "active") {
     const currentEnd = new Date(sub.subscriptionEndDate);
@@ -767,7 +517,7 @@ export const processPayment = (
     paymentHistory: [...sub.paymentHistory, payment],
   };
 
-  localStorage.setItem('sf_v2_subscription', JSON.stringify(updatedSub));
+  setSingle(KEYS.subscription, updatedSub);
   return payment;
 };
 
@@ -785,7 +535,7 @@ export const getFeatureAccess = (): {
   if (sub.status !== "active") {
     return {
       pos: false,
-      inventory: true,
+      inventory: true, // Allow view-only
       reports: false,
       staff: false,
       customers: false,
@@ -837,3 +587,4 @@ export const getFeatureAccess = (): {
       };
   }
 };
+
