@@ -3,7 +3,7 @@ services:
     name: stockflow-pos
     env: node
     plan: free
-    buildCommand: npm ci && npm run build
+    buildCommand: npm install && npm run build
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
@@ -14,6 +14,7 @@ services:
         fromDatabase:
           name: stockflow-db
           property: connectionString
+    runtime: node
 
 databases:
   - name: stockflow-db
