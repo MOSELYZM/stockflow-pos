@@ -4,7 +4,7 @@ import { Building, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login, getSettings, saveSettings, addStaff, saveAdminAccount } from "@/lib/store";
+import { login, getSettings, saveSettings, addStaff, saveAdminAccount, getAdminAccount } from "@/lib/store";
 import { toast } from "sonner";
 
 const AdminSignup = () => {
@@ -25,6 +25,14 @@ const AdminSignup = () => {
     }
 
     try {
+      // Check if admin account already exists
+      const existingAdmin = await getAdminAccount();
+      if (existingAdmin && existingAdmin.registered) {
+        toast.error("An admin account already exists. Please login instead.");
+        navigate("/admin-login");
+        return;
+      }
+
       // 1. Save Business Settings
       const settings = await getSettings();
       await saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
