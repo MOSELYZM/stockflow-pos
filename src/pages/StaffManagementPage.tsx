@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getStaff, addStaff, updateStaff, deleteStaff, getSales, type Staff } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -12,24 +12,10 @@ import { Search, Plus, Edit, Trash2, BarChart2 } from "lucide-react";
 import { toast } from "sonner";
 
 const StaffManagementPage = () => {
-  const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [staffList, setStaffList] = useState<Staff[]>(getStaff());
   const [search, setSearch] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
-
-  const refresh = async () => {
-    try {
-      const data = await getStaff();
-      setStaffList(data);
-    } catch (error) {
-      console.error('Error loading staff:', error);
-    }
-  };
-
-  useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, []);
 
   const [isReportOpen, setIsReportOpen] = useState(false);
   const [reportStaff, setReportStaff] = useState<Staff | null>(null);
@@ -51,10 +37,9 @@ const StaffManagementPage = () => {
     return new Date(0); // all
   };
 
-  const getStaffReport = async (staffId: string, tf: string) => {
+  const getStaffReport = (staffId: string, tf: string) => {
     const cutoff = getReportCutoff(tf);
-    const allSales = await getSales();
-    const relatedSales = allSales.filter(s => s.staffId === staffId && new Date(s.date) >= cutoff);
+    const relatedSales = getSales().filter(s => s.staffId === staffId && new Date(s.date) >= cutoff);
     
     let totalRevenue = 0;
     const itemMap: Record<string, { name: string, quantity: number, revenue: number }> = {};

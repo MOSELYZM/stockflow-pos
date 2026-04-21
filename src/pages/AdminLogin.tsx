@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Shield, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,54 +9,34 @@ import { toast } from "sonner";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const settings = getSettings();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        const settingsData = await getSettings();
-        setSettings(settingsData);
-      } catch (error) {
-        console.error('Error loading settings:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSettings();
-  }, []);
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    try {
-      const admin = await getAdminAccount();
-      
-      if (!admin || !admin.registered) {
-        toast.error("No business registered! Please register your business first.");
-        navigate("/admin-signup");
-        return;
-      }
-
-      if (email.trim() !== admin.email || password.trim() !== admin.password) {
-        toast.error("Invalid Admin Email or Password");
-        return;
-      }
-
-      login("admin", email.trim());
-      toast.success(`Welcome back, ${admin.adminName}!`);
-      navigate("/admin/dashboard");
-    } catch (error) {
-      console.error('Error during login:', error);
-      toast.error("An error occurred during login. Please try again.");
+    const admin = getAdminAccount();
+    
+    if (!admin || !admin.registered) {
+      toast.error("No business registered! Please register your business first.");
+      navigate("/admin-signup");
+      return;
     }
+
+    if (email.trim() !== admin.email || password.trim() !== admin.password) {
+      toast.error("Invalid Admin Email or Password");
+      return;
+    }
+
+    login("admin", email.trim());
+    toast.success(`Welcome back, ${admin.adminName}!`);
+    navigate("/admin/dashboard");
   };
 
   return (
@@ -68,12 +48,7 @@ const AdminLogin = () => {
       </div>
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-scale">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Shield className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="glass-card rounded-2xl p-8 shadow-2xl">
+        <div className="glass-card rounded-2xl p-8 shadow-2xl">
           <div className="flex flex-col items-center gap-4 mb-8">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-lg" />
@@ -83,7 +58,7 @@ const AdminLogin = () => {
             </div>
             <div className="text-center">
               <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-              <p className="text-sm text-muted-foreground mt-1">Sign in to {settings?.businessName || 'StockFlow'}</p>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to {settings.businessName}</p>
             </div>
           </div>
 
@@ -140,7 +115,6 @@ const AdminLogin = () => {
             </Link>
           </div>
         </div>
-        )}
       </div>
     </div>
   );

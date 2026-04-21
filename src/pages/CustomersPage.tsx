@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getCustomers, addCustomer, deleteCustomer, type Customer } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -9,54 +9,28 @@ import { Plus, Trash2, UsersRound, Search, Phone, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 const CustomersPage = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>(getCustomers());
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "" });
 
-  const refresh = async () => {
-    try {
-      const data = await getCustomers();
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error loading customers:', error);
-    }
-  };
-
-  useEffect(() => {
-    refresh().finally(() => setLoading(false));
-  }, []);
+  const refresh = () => setCustomers(getCustomers());
 
   const filtered = customers.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase()) || c.phone.includes(search)
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) { toast.error("Name is required"); return; }
-    try {
-      await addCustomer({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() });
-      toast.success("Customer added");
-      await refresh();
-      setDialogOpen(false);
-      setForm({ name: "", phone: "", email: "" });
-    } catch (error) {
-      console.error('Error adding customer:', error);
-      toast.error('Failed to add customer');
-    }
+    addCustomer({ name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() });
+    toast.success("Customer added");
+    refresh();
+    setDialogOpen(false);
+    setForm({ name: "", phone: "", email: "" });
   };
 
-  const handleDelete = async (id: string) => {
-    try {
-      await deleteCustomer(id);
-      toast.success("Customer deleted");
-      await refresh();
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      toast.error('Failed to delete customer');
-    }
-  };
+  const handleDelete = (id: string) => { deleteCustomer(id); toast.success("Customer deleted"); refresh(); };
 
   return (
     <AdminLayout>
