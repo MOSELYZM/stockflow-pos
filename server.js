@@ -4,7 +4,6 @@ import dotenv from "dotenv";
 import axios from "axios";
 import path from "path";
 import { fileURLToPath } from "url";
-import pg from "pg";
 import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -14,28 +13,6 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-// PostgreSQL connection
-let pool;
-if (process.env.DATABASE_URL) {
-  pool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-
-  // Test database connection
-  pool.connect((err, client, release) => {
-    if (err) {
-      console.error('Error connecting to database:', err.message);
-      console.log('⚠️  Running without database connection');
-    } else {
-      console.log('✅ Connected to PostgreSQL database');
-      release();
-    }
-  });
-} else {
-  console.log('⚠️  DATABASE_URL not set - running without database');
-}
 
 app.use(cors());
 app.use(express.json());
@@ -97,26 +74,13 @@ app.post("/api/charge-momo", async (req, res) => {
 
 // Serve frontend statically in production
 const distPath = path.join(__dirname, "dist");
-
-// Check if dist folder exists
-if (!fs.existsSync(distPath)) {
-  console.error('⚠️  Dist folder not found at:', distPath);
-  console.error('⚠️  The build may have failed or not run');
-  console.error('⚠️  Serving API only - frontend will not work');
-} else {
-  console.log('✅ Dist folder found at:', distPath);
-  app.use(express.static(distPath));
-}
+app.use(express.static(distPath));
 
 // SPA fallback - serve index.html for all non-API routes
 app.use((req, res, next) => {
   // Don't intercept API routes
   if (req.path.startsWith("/api")) {
     return next();
-  }
-  // If dist doesn't exist, return error
-  if (!fs.existsSync(distPath)) {
-    return res.status(500).json({ error: "Frontend not built - dist folder missing" });
   }
   // If it's a file request (has extension), let static middleware handle it
   if (req.path.includes('.')) {
