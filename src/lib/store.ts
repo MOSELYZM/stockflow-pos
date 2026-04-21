@@ -468,24 +468,16 @@ export const getAuth = (): { role: string; identifier: string; loggedIn: boolean
 };
 
 export const getAdminAccount = async (): Promise<any> => {
-  const { data, error } = await supabase
-    .from('admin_accounts')
-    .select('*')
-    .single();
-  if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  try {
+    const data = localStorage.getItem('sf_v2_admin');
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const saveAdminAccount = async (account: any) => {
-  const { error } = await supabase
-    .from('admin_accounts')
-    .upsert([{
-      admin_name: account.adminName,
-      email: account.email,
-      password: account.password,
-      registered: true
-    }]);
-  if (error) throw error;
+  localStorage.setItem('sf_v2_admin', JSON.stringify({ ...account, registered: true }));
 };
 
 // ---- Settings ----
