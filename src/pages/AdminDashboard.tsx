@@ -63,10 +63,10 @@ const AdminDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="h-screen flex w-full overflow-hidden">
         <DashboardSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-16 flex items-center justify-between px-4 lg:px-6 glass border-b border-white/20 sticky top-0 z-30">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <header className="h-16 flex items-center justify-between px-4 lg:px-6 glass border-b border-white/20 shrink-0 z-30">
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               <div>
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
             </div>
           </header>
 
-          <main className="flex-1 p-4 lg:p-6 space-y-6 overflow-auto">
+          <main className="flex-1 p-4 lg:p-6 space-y-6 overflow-y-auto">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-container" style={{ "--stagger-delay": "75ms" } as React.CSSProperties}>
               {statCards.map((s) => (
