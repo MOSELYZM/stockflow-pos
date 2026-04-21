@@ -99,11 +99,16 @@ const distPath = path.join(__dirname, "dist");
 app.use(express.static(distPath));
 
 // SPA fallback - serve index.html for all non-API routes
-app.all("*", (req, res) => {
+app.use((req, res, next) => {
   // Don't intercept API routes
   if (req.path.startsWith("/api")) {
-    return res.status(404).json({ error: "API route not found" });
+    return next();
   }
+  // If it's a file request (has extension), let static middleware handle it
+  if (req.path.includes('.')) {
+    return next();
+  }
+  // Otherwise serve index.html for SPA routing
   res.sendFile(path.join(distPath, "index.html"));
 });
 
