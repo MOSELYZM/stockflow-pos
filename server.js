@@ -95,9 +95,16 @@ app.post("/api/charge-momo", async (req, res) => {
 });
 
 // Serve frontend statically in production
-app.use(express.static(path.join(__dirname, "dist")));
-app.use((req, res) => {
-  res.sendFile(path.join(__dirname, "dist", "index.html"));
+const distPath = path.join(__dirname, "dist");
+app.use(express.static(distPath));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get("*", (req, res) => {
+  // Don't intercept API routes
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ error: "API route not found" });
+  }
+  res.sendFile(path.join(distPath, "index.html"));
 });
 
 app.listen(PORT, "0.0.0.0", () => {
