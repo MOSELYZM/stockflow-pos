@@ -5,6 +5,7 @@ import axios from "axios";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -96,13 +97,26 @@ app.post("/api/charge-momo", async (req, res) => {
 
 // Serve frontend statically in production
 const distPath = path.join(__dirname, "dist");
-app.use(express.static(distPath));
+
+// Check if dist folder exists
+if (!fs.existsSync(distPath)) {
+  console.error('⚠️  Dist folder not found at:', distPath);
+  console.error('⚠️  The build may have failed or not run');
+  console.error('⚠️  Serving API only - frontend will not work');
+} else {
+  console.log('✅ Dist folder found at:', distPath);
+  app.use(express.static(distPath));
+}
 
 // SPA fallback - serve index.html for all non-API routes
 app.use((req, res, next) => {
   // Don't intercept API routes
   if (req.path.startsWith("/api")) {
     return next();
+  }
+  // If dist doesn't exist, return error
+  if (!fs.existsSync(distPath)) {
+    return res.status(500).json({ error: "Frontend not built - dist folder missing" });
   }
   // If it's a file request (has extension), let static middleware handle it
   if (req.path.includes('.')) {
