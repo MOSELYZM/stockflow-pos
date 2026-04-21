@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getProducts, addProduct, updateProduct, deleteProduct, type Product, getAuth } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { toast } from "sonner";
 const categories = ["Groceries", "Beverages", "Bakery", "Household", "Electronics", "Other"];
 
 const InventoryPage = () => {
-  const [products, setProducts] = useState<Product[]>(getProducts());
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const authRecord = getAuth() || {};
   const isAdmin = authRecord?.role === "admin";
   const [search, setSearch] = useState("");
@@ -22,7 +23,19 @@ const InventoryPage = () => {
   const [form, setForm] = useState({ name: "", sku: "", category: "Groceries", price: "", cost: "", stock: "", reorderLevel: "", image: "" });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const refresh = () => setProducts(getProducts());
+  const refresh = async () => {
+    try {
+      const data = await getProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast.error('Failed to load products');
+    }
+  };
+
+  useEffect(() => {
+    refresh().finally(() => setLoading(false));
+  }, []);
 
   const filtered = products.filter((p) => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
@@ -65,25 +78,35 @@ const InventoryPage = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.sku.trim()) { toast.error("Name and SKU are required"); return; }
     const data = { name: form.name.trim(), sku: form.sku.trim(), category: form.category, price: Number(form.price) || 0, cost: Number(form.cost) || 0, stock: Number(form.stock) || 0, reorderLevel: Number(form.reorderLevel) || 0, image: form.image || undefined };
-    if (editingProduct) {
-      updateProduct(editingProduct.id, data);
-      toast.success("Product updated");
-    } else {
-      addProduct(data);
-      toast.success("Product added");
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, data);
+        toast.success("Product updated");
+      } else {
+        await addProduct(data);
+        toast.success("Product added");
+      }
+      await refresh();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving product:', error);
+      toast.error('Failed to save product');
     }
-    refresh();
-    setDialogOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
-    toast.success("Product deleted");
-    refresh();
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteProduct(id);
+      toast.success("Product deleted");
+      await refresh();
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    }
   };
 
   const getStockStatus = (p: Product) => {

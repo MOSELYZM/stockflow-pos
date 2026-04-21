@@ -10,8 +10,10 @@ import { Search, Plus, Minus, ShoppingCart, Trash2, Check, Package, QrCode, Smar
 import { toast } from "sonner";
 
 const POSPage = () => {
-  const settings = getSettings();
-  const [products, setProducts] = useState<Product[]>(getProducts());
+  const [settings, setSettings] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<(SaleItem & { maxStock: number })[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "MOBILE MONEY" | "CARD" | "QR CODE">("CASH");
@@ -24,7 +26,28 @@ const POSPage = () => {
   const [verifiedName, setVerifiedName] = useState("");
   const [qrTransactionId, setQrTransactionId] = useState("");
   const [qrPaymentConfirmed, setQrPaymentConfirmed] = useState(false);
-  const customers = getCustomers();
+
+  const loadData = async () => {
+    try {
+      const [settingsData, productsData, customersData] = await Promise.all([
+        getSettings(),
+        getProducts(),
+        getCustomers()
+      ]);
+      setSettings(settingsData);
+      setProducts(productsData);
+      setCustomers(customersData);
+    } catch (error) {
+      console.error('Error loading POS data:', error);
+      toast.error('Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const filtered = products.filter((p) =>
     p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())
@@ -61,8 +84,8 @@ const POSPage = () => {
   // Generate QR code URL with payment data
   const generateQRData = () => {
     const paymentData = {
-      merchant: settings.businessName,
-      location: settings.location,
+      merchant: settings?.businessName || 'StockFlow',
+      location: settings?.location || 'Zambia',
       amount: total.toFixed(2),
       transactionId: qrTransactionId,
       currency: "ZMK",
@@ -158,48 +181,53 @@ const POSPage = () => {
     }
   };
 
-  const finalizeCheckout = (mobileMoneyName?: string) => {
-    const finalDetails = paymentMethod === "QR CODE" 
-      ? qrTransactionId 
-      : paymentMethod === "MOBILE MONEY" 
-        ? `${momoNetwork}:${paymentDetails}` 
-        : paymentDetails;
+  const finalizeCheckout = async (mobileMoneyName?: string) => {
+    try {
+      const finalDetails = paymentMethod === "QR CODE" 
+        ? qrTransactionId 
+        : paymentMethod === "MOBILE MONEY" 
+          ? `${momoNetwork}:${paymentDetails}` 
+          : paymentDetails;
 
-    if (paymentMethod === "MOBILE MONEY") {
-      addMobileMoneyTransaction({
+      if (paymentMethod === "MOBILE MONEY") {
+        await addMobileMoneyTransaction({
+          date: new Date().toISOString(),
+          transactionId: `TXN${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          phone: paymentDetails,
+          amount: total,
+          status: "completed"
+        });
+      }
+
+      const sfAuth = getAuth() || {};
+      const staffId = sfAuth?.role === "staff" ? sfAuth.identifier : undefined;
+
+      await addSale({
         date: new Date().toISOString(),
-        transactionId: `TXN${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        phone: paymentDetails,
-        amount: total,
-        status: "completed"
+        customer: customerName,
+        items: cart.map(({ maxStock, ...item }) => item),
+        total,
+        paymentMethod,
+        staffId: staffId,
       });
+      
+      setPaymentDetails(finalDetails);
+
+      // Auto complete the transaction and trigger print dialog
+      setTimeout(async () => {
+        window.print();
+        toast.success(`Sale completed! Total: ZMK ${total.toFixed(2)}`);
+        setCart([]);
+        setSearch("");
+        setPaymentDetails("");
+        setBankName("");
+        setIsCheckoutOpen(false);
+        await loadData();
+      }, 100);
+    } catch (error) {
+      console.error('Error completing checkout:', error);
+      toast.error('Failed to complete sale');
     }
-
-    const sfAuth = getAuth() || {};
-    const staffId = sfAuth?.role === "staff" ? sfAuth.identifier : undefined;
-
-    addSale({
-      date: new Date().toISOString(),
-      customer: customerName,
-      items: cart.map(({ maxStock, ...item }) => item),
-      total,
-      paymentMethod,
-      staffId: staffId,
-    });
-    
-    setPaymentDetails(finalDetails);
-
-    // Auto complete the transaction and trigger print dialog
-    setTimeout(() => {
-      window.print();
-      toast.success(`Sale completed! Total: ZMK ${total.toFixed(2)}`);
-      setCart([]);
-      setSearch("");
-      setPaymentDetails("");
-      setBankName("");
-      setIsCheckoutOpen(false);
-      setProducts(getProducts());
-    }, 100);
   };
 
   return (

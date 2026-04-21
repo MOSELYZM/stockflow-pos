@@ -23,9 +23,9 @@ const Index = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center gap-10 w-full max-w-2xl animate-fade-in-up">
+      <div className="relative z-10 flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in-up">
         {/* Logo */}
-        <div className="relative">
+        <div className="relative mt-8">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-success/20 rounded-2xl blur-xl animate-pulse-soft" />
           <img 
             src={settings.logo || logo} 
@@ -90,7 +90,7 @@ const Index = () => {
           </button>
         </div>
 
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-1">
           <p className="text-sm text-muted-foreground">First time here?</p>
           <Button 
             variant="outline" 
@@ -102,8 +102,10 @@ const Index = () => {
           </Button>
         </div>
 
-        <div className="mt-8 text-center space-y-1">
-          <p className="text-[10px] text-muted-foreground/60 italic">developed by Hakanene mosely</p>
+        <div className="mt-8 mb-8 text-center space-y-1">
+          <div className="overflow-hidden whitespace-nowrap">
+            <p className="text-[10px] text-muted-foreground/60 italic animate-marquee inline-block">developed by mosely hakanene</p>
+          </div>
           <p className="text-xs text-muted-foreground mt-4">© {new Date().getFullYear()} {settings.businessName}. All rights reserved.</p>
         </div>
       </div>

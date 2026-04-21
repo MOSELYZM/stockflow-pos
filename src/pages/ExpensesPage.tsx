@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getExpenses, addExpense, deleteExpense, type Expense } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -12,24 +12,51 @@ import { toast } from "sonner";
 const expenseCategories = ["Utilities", "Staff Welfare", "Transport", "Rent", "Supplies", "Marketing", "Other"];
 
 const ExpensesPage = () => {
-  const [expenses, setExpenses] = useState<Expense[]>(getExpenses());
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ description: "", amount: "", category: "Utilities", date: new Date().toISOString().slice(0, 10) });
 
-  const refresh = () => setExpenses(getExpenses());
-  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.description.trim()) { toast.error("Description is required"); return; }
-    addExpense({ description: form.description.trim(), amount: Number(form.amount) || 0, category: form.category, date: form.date });
-    toast.success("Expense added");
-    refresh();
-    setDialogOpen(false);
-    setForm({ description: "", amount: "", category: "Utilities", date: new Date().toISOString().slice(0, 10) });
+  const refresh = async () => {
+    try {
+      const data = await getExpenses();
+      setExpenses(data);
+    } catch (error) {
+      console.error('Error loading expenses:', error);
+    }
   };
 
-  const handleDelete = (id: string) => { deleteExpense(id); toast.success("Expense deleted"); refresh(); };
+  useEffect(() => {
+    refresh().finally(() => setLoading(false));
+  }, []);
+
+  const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.description.trim()) { toast.error("Description is required"); return; }
+    try {
+      await addExpense({ description: form.description.trim(), amount: Number(form.amount) || 0, category: form.category, date: form.date });
+      toast.success("Expense added");
+      await refresh();
+      setDialogOpen(false);
+      setForm({ description: "", amount: "", category: "Utilities", date: new Date().toISOString().slice(0, 10) });
+    } catch (error) {
+      console.error('Error adding expense:', error);
+      toast.error('Failed to add expense');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteExpense(id);
+      toast.success("Expense deleted");
+      await refresh();
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+      toast.error('Failed to delete expense');
+    }
+  };
 
   return (
     <AdminLayout>

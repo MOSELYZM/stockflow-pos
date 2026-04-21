@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getSettings, saveSettings, type AppSettings } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -13,12 +13,34 @@ import { logout } from "@/lib/store";
 
 const SettingsPage = () => {
   const navigate = useNavigate();
-  const [settings, setSettings] = useState<AppSettings>(getSettings());
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSave = () => {
-    saveSettings(settings);
-    toast.success("Settings saved");
-    setTimeout(() => window.location.reload(), 500);
+  const loadSettings = async () => {
+    try {
+      const data = await getSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const handleSave = async () => {
+    if (!settings) return;
+    try {
+      await saveSettings(settings);
+      toast.success("Settings saved");
+      setTimeout(() => window.location.reload(), 500);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings');
+    }
   };
 
   const handleLogout = () => {

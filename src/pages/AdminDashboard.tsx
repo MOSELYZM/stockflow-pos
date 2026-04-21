@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import DashboardSidebar from "@/components/DashboardSidebar";
-import { RefreshCw, Plus, ShoppingCart, Receipt, Smartphone, TrendingUp, AlertTriangle, ArrowRight, Banknote, CreditCard, Crown } from "lucide-react";
+import { RefreshCw, Plus, ShoppingCart, Receipt, Smartphone, TrendingUp, AlertTriangle, ArrowRight, Banknote, CreditCard, Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts";
@@ -18,9 +18,9 @@ const getGreeting = () => {
   return "Good evening";
 };
 
-const getUserName = () => {
+const getUserName = async () => {
   const auth = getAuth();
-  const admin = getAdminAccount();
+  const admin = await getAdminAccount();
   if (auth?.role === "admin" && admin?.adminName) {
     return admin.adminName;
   }
@@ -32,17 +32,51 @@ const AdminDashboard = () => {
   const [, setRefresh] = useState(0);
   const doRefresh = () => setRefresh((n) => n + 1);
   const [showSubModal, setShowSubModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("Admin");
 
-  const settings = getSettings();
-  const todaySales = getTodaySales();
-  const todayExpenses = getTodayExpenses();
-  const lowStock = getLowStockProducts();
-  const chartData = getLast7DaysData();
-  const topProducts = getTopProducts();
-  const mobileMoneyToday = getTodayMobileMoney();
+  const [settings, setSettings] = useState<any>(null);
+  const [todaySales, setTodaySales] = useState<any[]>([]);
+  const [todayExpenses, setTodayExpenses] = useState<any[]>([]);
+  const [lowStock, setLowStock] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [mobileMoneyToday, setMobileMoneyToday] = useState(0);
   const subscription = getSubscription();
   const daysRemaining = getDaysRemaining();
   const subStatus = getSubscriptionStatusText();
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [settingsData, salesData, expensesData, lowStockData, chartDataResult, topProductsData, mobileMoneyData, adminName] = await Promise.all([
+        getSettings(),
+        getTodaySales(),
+        getTodayExpenses(),
+        getLowStockProducts(),
+        getLast7DaysData(),
+        getTopProducts(),
+        getTodayMobileMoney(),
+        getUserName(),
+      ]);
+      setSettings(settingsData);
+      setTodaySales(salesData);
+      setTodayExpenses(expensesData);
+      setLowStock(lowStockData);
+      setChartData(chartDataResult);
+      setTopProducts(topProductsData);
+      setMobileMoneyToday(mobileMoneyData);
+      setUserName(adminName);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   const totalSalesToday = todaySales.reduce((sum, s) => sum + s.total, 0);
   const totalExpensesToday = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -51,6 +85,19 @@ const AdminDashboard = () => {
   const cardToday = todaySales.filter(s => s.paymentMethod === "CARD").reduce((sum, s) => sum + s.total, 0);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  if (loading || !settings) {
+    return (
+      <SidebarProvider>
+        <div className="h-screen flex w-full overflow-hidden">
+          <DashboardSidebar />
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </SidebarProvider>
+    );
+  }
 
   const statCards = [
     { label: "SALES TODAY", value: `${settings.currency} ${totalSalesToday.toFixed(2)}`, sub: `${todaySales.length} transactions`, icon: ShoppingCart, color: "from-blue-500 to-blue-600", bgColor: "bg-blue-500/10", textColor: "text-blue-600" },
@@ -70,12 +117,12 @@ const AdminDashboard = () => {
             <div className="flex items-center gap-3">
               <SidebarTrigger />
               <div>
-                <h1 className="text-lg font-bold text-foreground">{getGreeting()}, {getUserName()} 👋</h1>
+                <h1 className="text-lg font-bold text-foreground">{getGreeting()}, {userName} 👋</h1>
                 <p className="text-xs text-muted-foreground">{today}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="gap-1.5 glass" onClick={doRefresh}>
+              <Button variant="outline" size="sm" className="gap-1.5 glass" onClick={loadData}>
                 <RefreshCw className="h-3.5 w-3.5" /> Refresh
               </Button>
               <Button size="sm" variant="gradient" className="gap-1.5 shine" onClick={() => navigate("/admin/pos")}>

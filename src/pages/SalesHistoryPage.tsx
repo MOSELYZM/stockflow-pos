@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/AdminLayout";
 import { getSales, type Sale } from "@/lib/store";
 import { Input } from "@/components/ui/input";
@@ -6,15 +6,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 
 const SalesHistoryPage = () => {
-  const allSales = getSales();
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
   const authRecord = JSON.parse(localStorage.getItem("sf_auth") || "{}");
   const isStaff = authRecord?.role === "staff";
   const staffId = authRecord?.identifier;
 
-  const [sales] = useState<Sale[]>(isStaff ? allSales.filter(s => s.staffId === staffId) : allSales);
   const [search, setSearch] = useState("");
   const [methodFilter, setMethodFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const loadSales = async () => {
+    try {
+      const allSales = await getSales();
+      const filteredSales = isStaff ? allSales.filter(s => s.staffId === staffId) : allSales;
+      setSales(filteredSales);
+    } catch (error) {
+      console.error('Error loading sales:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSales();
+  }, []);
 
   const filtered = sales.filter((s) => {
     const matchSearch = s.customer.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase());

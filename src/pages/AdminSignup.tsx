@@ -17,35 +17,40 @@ const AdminSignup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessName.trim() || !location.trim() || !adminName.trim() || !email.trim() || !password.trim()) {
       toast.error("Please fill in all fields.");
       return;
     }
 
-    // 1. Save Business Settings
-    const settings = getSettings();
-    saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
+    try {
+      // 1. Save Business Settings
+      const settings = await getSettings();
+      await saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
 
-    // 2. Register Admin Account & Staff Role
-    saveAdminAccount({
-      email: email.trim(),
-      password: password.trim(),
-      adminName: adminName.trim(),
-    });
+      // 2. Register Admin Account & Staff Role
+      await saveAdminAccount({
+        email: email.trim(),
+        password: password.trim(),
+        adminName: adminName.trim(),
+      });
 
-    addStaff({
-      name: adminName.trim(),
-      staffId: email.trim(),
-      role: "Manager",
-      status: "active"
-    });
+      await addStaff({
+        name: adminName.trim(),
+        staffId: email.trim(),
+        role: "Manager",
+        status: "active"
+      });
 
-    // 3. Login
-    login("admin", email.trim());
-    toast.success("Business registered successfully! Welcome to StockFlow.");
-    navigate("/admin/dashboard");
+      // 3. Login
+      login("admin", email.trim());
+      toast.success("Business registered successfully! Welcome to StockFlow.");
+      navigate("/admin/dashboard");
+    } catch (error) {
+      console.error('Error during signup:', error);
+      toast.error("An error occurred during registration. Please try again.");
+    }
   };
 
   return (
