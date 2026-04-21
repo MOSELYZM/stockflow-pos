@@ -29,5 +29,6 @@ export default defineConfig(({ mode }) => ({
     sourcemap: !!process.env.TAURI_DEBUG,
     outDir: 'dist',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
   },
 }));
