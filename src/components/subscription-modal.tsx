@@ -140,11 +140,7 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
         setSubscription(updatedSub);
         setShowPaymentForm(false);
         setPhoneNumber("");
-
-        // Reload to apply new permissions
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        onOpenChange(false);
       } catch (error) {
         toast.error("Payment failed. Please try again.", { id: "payment" });
       } finally {
