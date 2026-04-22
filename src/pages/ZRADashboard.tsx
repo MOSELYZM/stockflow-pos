@@ -313,7 +313,7 @@ const ZRADashboard = () => {
             <DialogTitle>ZRA Compliant Invoice</DialogTitle>
           </DialogHeader>
           {zraInvoice && (
-            <ZRAInvoice invoice={zraInvoice} onClose={() => setShowInvoiceDialog(false)} />
+            <ZRAInvoiceComponent invoice={zraInvoice} onClose={() => setShowInvoiceDialog(false)} />
           )}
         </DialogContent>
       </Dialog>
