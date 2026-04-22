@@ -20,6 +20,7 @@ import ReportsPage from "./pages/ReportsPage";
 import UploadPage from "./pages/UploadPage";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagementPage from "./pages/StaffManagementPage";
+import ZRADashboard from "./pages/ZRADashboard";
 import AdminSignup from "./pages/AdminSignup";
 import NotFound from "./pages/NotFound";
 
@@ -45,6 +46,7 @@ function AnimatedRoutes() {
         <Route path="/admin/customers" element={<CustomersPage />} />
         <Route path="/admin/reports" element={<ReportsPage />} />
         <Route path="/admin/upload" element={<UploadPage />} />
+        <Route path="/admin/zra" element={<ZRADashboard />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
         <Route path="/admin/staff" element={<StaffManagementPage />} />
         <Route path="/staff/dashboard" element={<StaffDashboard />} />

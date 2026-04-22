@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, ShoppingCart, Package, History,
   Receipt, Smartphone, UsersRound, BarChart3, Upload, Settings, UserCircle, LogOut,
-  Lock
+  Lock, FileText
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { title: "Staff", url: "/admin/staff", icon: UserCircle, requires: "staff" },
   { title: "Reports", url: "/admin/reports", icon: BarChart3, requires: "reports" },
   { title: "Upload & Analyse", url: "/admin/upload", icon: Upload, requires: "analytics" },
+  { title: "ZRA Compliance", url: "/admin/zra", icon: FileText, requires: "reports" },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 
