@@ -5,15 +5,15 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Start fade out after 5.5 seconds
+    // Start fade out after 9.5 seconds
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 5500);
+    }, 9500);
 
     // Call onComplete after fade animation (0.5s)
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 6000);
+    }, 10000);
 
     return () => {
       clearTimeout(fadeTimer);
