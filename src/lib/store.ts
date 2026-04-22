@@ -257,10 +257,6 @@ export interface AppSettings {
   zamtelNumber?: string;
   zamtelName?: string;
   logo?: string;
-  // ZRA-specific fields
-  tin?: string; // Tax Identification Number
-  vatRegistration?: string; // VAT Registration Number
-  zraCertificate?: string; // ZRA Certificate Number
 }
 
 const defaultSettings: AppSettings = {
@@ -339,149 +335,7 @@ export const getTodayMobileMoney = (): number => {
     .reduce((sum, m) => sum + m.amount, 0);
 };
 
-// ---- ZRA VAT/Tax Reporting ----
-export interface VATReport {
-  period: string; // e.g., "2024-01"
-  totalSales: number;
-  totalVAT: number;
-  exemptSales: number;
-  zeroRatedSales: number;
-  invoiceCount: number;
-}
-
-export interface ZRAInvoice {
-  invoiceNumber: string;
-  date: string;
-  tin: string;
-  vatRegistration: string;
-  businessName: string;
-  businessAddress: string;
-  customerName: string;
-  customerTIN?: string;
-  items: {
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    vatRate: number; // 16% for standard, 0% for exempt
-    vatAmount: number;
-    total: number;
-  }[];
-  subTotal: number;
-  totalVAT: number;
-  grandTotal: number;
-  paymentMethod: string;
-}
-
-// Calculate VAT for a sale (Zambia standard is 16%)
-export const calculateVAT = (amount: number, taxRate: number, isExempt: boolean = false): number => {
-  if (isExempt) return 0;
-  return (amount * taxRate) / 100;
-};
-
-// Generate ZRA-compliant invoice from a sale
-export const generateZRAInvoice = (sale: Sale, settings: AppSettings): ZRAInvoice => {
-  const taxRate = settings.taxRate || 16;
-  
-  const items = sale.items.map(item => {
-    const unitPrice = item.price;
-    const lineTotal = item.quantity * unitPrice;
-    const vatAmount = calculateVAT(lineTotal, taxRate);
-    
-    return {
-      description: item.productName,
-      quantity: item.quantity,
-      unitPrice,
-      vatRate: taxRate,
-      vatAmount,
-      total: lineTotal + vatAmount
-    };
-  });
-
-  const subTotal = sale.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-  const totalVAT = items.reduce((sum, item) => sum + item.vatAmount, 0);
-  const grandTotal = subTotal + totalVAT;
-
-  return {
-    invoiceNumber: sale.id,
-    date: sale.date,
-    tin: settings.tin || "NOT PROVIDED",
-    vatRegistration: settings.vatRegistration || "NOT PROVIDED",
-    businessName: settings.businessName,
-    businessAddress: settings.location,
-    customerName: sale.customer,
-    customerTIN: undefined,
-    items,
-    subTotal,
-    totalVAT,
-    grandTotal,
-    paymentMethod: sale.paymentMethod
-  };
-};
-
-// Get VAT report for a specific period
-export const getVATReport = (year: number, month: number): VATReport => {
-  const sales = getSales();
-  const period = `${year}-${String(month).padStart(2, '0')}`;
-  const settings = getSettings();
-  const taxRate = settings.taxRate || 16;
-
-  const periodSales = sales.filter(s => s.date.startsWith(period));
-  
-  let totalSales = 0;
-  let totalVAT = 0;
-  let exemptSales = 0;
-  let zeroRatedSales = 0;
-
-  periodSales.forEach(sale => {
-    const saleTotal = sale.total;
-    const vat = calculateVAT(saleTotal, taxRate);
-    
-    totalSales += saleTotal;
-    totalVAT += vat;
-    // Add logic for exempt/zero-rated items if needed
-  });
-
-  return {
-    period,
-    totalSales,
-    totalVAT,
-    exemptSales,
-    zeroRatedSales,
-    invoiceCount: periodSales.length
-  };
-};
-
-// Get quarterly VAT report
-export const getQuarterlyVATReport = (year: number, quarter: number): VATReport => {
-  const startMonth = (quarter - 1) * 3 + 1;
-  const endMonth = startMonth + 2;
-  
-  let totalSales = 0;
-  let totalVAT = 0;
-  let exemptSales = 0;
-  let zeroRatedSales = 0;
-  let invoiceCount = 0;
-  const settings = getSettings();
-  const taxRate = settings.taxRate || 16;
-
-  for (let month = startMonth; month <= endMonth; month++) {
-    const report = getVATReport(year, month);
-    totalSales += report.totalSales;
-    totalVAT += report.totalVAT;
-    exemptSales += report.exemptSales;
-    zeroRatedSales += report.zeroRatedSales;
-    invoiceCount += report.invoiceCount;
-  }
-
-  return {
-    period: `${year}-Q${quarter}`,
-    totalSales,
-    totalVAT,
-    exemptSales,
-    zeroRatedSales,
-    invoiceCount
-  };
-};
+// ---- Subscription Management ----
 export type SubscriptionTier = "trial" | "basic" | "premium";
 export type SubscriptionStatus = "active" | "expired" | "cancelled";
 
@@ -497,9 +351,6 @@ export interface Subscription {
   monthlyFee: number; // in ZMW
   paymentHistory: PaymentRecord[];
   autoRenew: boolean;
-  deviceId: string; // Device ID to prevent multi-device login
-  activationCode?: string; // One-time activation code
-  codeUsed: boolean; // Whether the activation code has been used
 }
 
 export interface PaymentRecord {
@@ -515,44 +366,6 @@ export interface PaymentRecord {
 
 const TRIAL_DAYS = 7;
 const MONTHLY_FEE = 200; // ZMW
-const USED_CODES_KEY = "sf_v2_used_codes";
-const DEVICE_ID_KEY = "sf_v2_device_id";
-
-// Get or generate device ID
-export const getDeviceId = (): string => {
-  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
-  if (!deviceId) {
-    deviceId = genId();
-    localStorage.setItem(DEVICE_ID_KEY, deviceId);
-  }
-  return deviceId;
-};
-
-// Generate a unique activation code
-export const generateActivationCode = (): string => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let code = "";
-  for (let i = 0; i < 12; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  // Format as XXXX-XXXX-XXXX
-  return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8, 12)}`;
-};
-
-// Check if a code has been used
-export const isCodeUsed = (code: string): boolean => {
-  const usedCodes = getSingle<string[]>(USED_CODES_KEY, []);
-  return usedCodes.includes(code);
-};
-
-// Mark a code as used
-export const markCodeUsed = (code: string) => {
-  const usedCodes = getSingle<string[]>(USED_CODES_KEY, []);
-  if (!usedCodes.includes(code)) {
-    usedCodes.push(code);
-    setSingle(USED_CODES_KEY, usedCodes);
-  }
-};
 
 function getSingle<T>(key: string, fallback: T | null = null): T | null {
   try {
@@ -584,8 +397,6 @@ export const initializeSubscription = (): Subscription => {
     monthlyFee: MONTHLY_FEE,
     paymentHistory: [],
     autoRenew: true,
-    deviceId: getDeviceId(),
-    codeUsed: false,
   };
 
   setSingle(KEYS.subscription, subscription);
@@ -612,18 +423,6 @@ export const getSubscription = (): Subscription => {
     const endDate = new Date(sub.subscriptionEndDate);
     if (now > endDate) {
       sub.status = "expired";
-      setSingle(KEYS.subscription, sub);
-    }
-  }
-
-  // Check device ID (for paid subscriptions)
-  if ((sub.tier === "basic" || sub.tier === "premium") && sub.status === "active") {
-    const currentDeviceId = getDeviceId();
-    if (sub.deviceId !== currentDeviceId) {
-      // Device mismatch - reset to trial
-      sub.status = "expired";
-      sub.tier = "trial";
-      sub.deviceId = currentDeviceId;
       setSingle(KEYS.subscription, sub);
     }
   }
@@ -716,83 +515,10 @@ export const processPayment = (
     subscriptionEndDate: endDate.toISOString(),
     lastPaymentDate: now.toISOString(),
     paymentHistory: [...sub.paymentHistory, payment],
-    deviceId: "", // Will be set when code is redeemed
-    activationCode: "", // Will be set by admin
-    codeUsed: false,
   };
 
   setSingle(KEYS.subscription, updatedSub);
   return payment;
-};
-
-// Manually generate an activation code for a user (admin function)
-export const generateUserCode = (tier: SubscriptionTier, months: number): string => {
-  const code = generateActivationCode();
-  const now = new Date();
-  const sub = getSubscription();
-
-  // Calculate end date
-  let endDate = new Date(now);
-  if (sub.subscriptionEndDate && sub.status === "active") {
-    const currentEnd = new Date(sub.subscriptionEndDate);
-    if (currentEnd > now) {
-      endDate = currentEnd;
-    }
-  }
-  endDate.setMonth(endDate.getMonth() + months);
-
-  const updatedSub: Subscription = {
-    ...sub,
-    tier,
-    status: "active",
-    subscriptionStartDate: sub.subscriptionStartDate || now.toISOString(),
-    subscriptionEndDate: endDate.toISOString(),
-    lastPaymentDate: now.toISOString(),
-    deviceId: "",
-    activationCode: code,
-    codeUsed: false,
-  };
-
-  setSingle(KEYS.subscription, updatedSub);
-  return code;
-};
-
-// Redeem activation code
-export const redeemCode = (code: string): { success: boolean; message: string } => {
-  const sub = getSubscription();
-
-  // Check if subscription has an activation code set
-  if (!sub.activationCode || sub.activationCode === "") {
-    return { success: false, message: "No activation code has been generated. Please contact the admin." };
-  }
-
-  // Check if code matches (case-insensitive)
-  if (sub.activationCode.toUpperCase() !== code.toUpperCase()) {
-    return { success: false, message: "Invalid activation code" };
-  }
-
-  // Check if code already used
-  if (sub.codeUsed) {
-    return { success: false, message: "This activation code has already been used" };
-  }
-
-  // Check if code is in global used codes list
-  if (isCodeUsed(code)) {
-    return { success: false, message: "This activation code has already been used on another device" };
-  }
-
-  // Validate code and activate subscription
-  const now = new Date();
-  const updatedSub: Subscription = {
-    ...sub,
-    deviceId: getDeviceId(),
-    codeUsed: true,
-  };
-
-  setSingle(KEYS.subscription, updatedSub);
-  markCodeUsed(code);
-
-  return { success: true, message: "Subscription activated successfully!" };
 };
 
 export const getFeatureAccess = (): {
