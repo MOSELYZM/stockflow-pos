@@ -761,8 +761,13 @@ export const generateUserCode = (tier: SubscriptionTier, months: number): string
 export const redeemCode = (code: string): { success: boolean; message: string } => {
   const sub = getSubscription();
 
-  // Check if code matches
-  if (sub.activationCode !== code) {
+  // Check if subscription has an activation code set
+  if (!sub.activationCode || sub.activationCode === "") {
+    return { success: false, message: "No activation code has been generated. Please contact the admin." };
+  }
+
+  // Check if code matches (case-insensitive)
+  if (sub.activationCode.toUpperCase() !== code.toUpperCase()) {
     return { success: false, message: "Invalid activation code" };
   }
 
