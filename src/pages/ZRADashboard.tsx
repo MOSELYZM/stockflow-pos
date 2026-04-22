@@ -91,7 +91,7 @@ const ZRADashboard = () => {
     const options = [];
     const now = new Date();
     for (let i = 0; i < 8; i++) {
-      const quarter = Math.ceil((now.getMonth() + 1 - i * 3) / 3);
+      let quarter = Math.ceil((now.getMonth() + 1 - i * 3) / 3);
       let year = now.getFullYear();
       if (quarter <= 0) {
         quarter += 4;
