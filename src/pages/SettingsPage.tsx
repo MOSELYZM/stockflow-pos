@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Settings, Save, LogOut } from "lucide-react";
+import { Settings, Save, LogOut, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { logout } from "@/lib/store";
@@ -152,6 +152,41 @@ const SettingsPage = () => {
                   <Label className="text-xs">Registered Name</Label>
                   <Input placeholder="e.g. Your Business Name" value={settings.zamtelName || ""} onChange={(e) => setSettings({ ...settings, zamtelName: e.target.value })} />
                 </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ZRA Tax Settings */}
+        <Card className="border-primary/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              ZRA Tax Compliance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground mb-4">Enter your Zambia Revenue Authority tax registration details for VAT-compliant invoicing.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-sm">Tax Identification Number (TIN)</Label>
+                <Input placeholder="e.g. 100000000" value={settings.tin || ""} onChange={(e) => setSettings({ ...settings, tin: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">VAT Registration Number</Label>
+                <Input placeholder="e.g. VAT-123456" value={settings.vatRegistration || ""} onChange={(e) => setSettings({ ...settings, vatRegistration: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">ZRA Certificate Number</Label>
+                <Input placeholder="e.g. ZRA-789012" value={settings.zraCertificate || ""} onChange={(e) => setSettings({ ...settings, zraCertificate: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm">Branch ID</Label>
+                <Input placeholder="e.g. 01" value={settings.branchId || ""} onChange={(e) => setSettings({ ...settings, branchId: e.target.value })} />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <Label className="text-sm">Device Serial Number</Label>
+                <Input placeholder="e.g. SN123456789" value={settings.deviceSerial || ""} onChange={(e) => setSettings({ ...settings, deviceSerial: e.target.value })} />
               </div>
             </div>
           </CardContent>
