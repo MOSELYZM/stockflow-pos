@@ -20,6 +20,11 @@ const SuperAdminDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "trial" | "expired">("all");
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false);
+      toast.error("Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env");
+      return;
+    }
     loadTenants();
     loadSubscriptions();
   }, []);
