@@ -4,7 +4,7 @@ import { Building, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { login, getSettings, saveSettings, addStaff, saveAdminAccount, getAdminAccount } from "@/lib/store";
+import { signUpTenant } from "@/lib/supabase-auth";
 import { toast } from "sonner";
 
 const AdminSignup = () => {
@@ -17,7 +17,7 @@ const AdminSignup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessName.trim() || !location.trim() || !adminName.trim() || !email.trim() || !password.trim()) {
       toast.error("Please fill in all fields.");
@@ -25,39 +25,22 @@ const AdminSignup = () => {
     }
 
     try {
-      // Check if admin account already exists
-      const existingAdmin = getAdminAccount();
-      if (existingAdmin && existingAdmin.registered) {
-        toast.error("An admin account already exists. Please login instead.");
-        navigate("/admin-login");
-        return;
-      }
+      toast.loading("Creating your business account...", { id: "signup" });
+      
+      await signUpTenant(
+        email.trim(),
+        password.trim(),
+        businessName.trim(),
+        location.trim(),
+        adminName.trim()
+      );
 
-      // 1. Save Business Settings
-      const settings = getSettings();
-      saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
-
-      // 2. Register Admin Account & Staff Role
-      saveAdminAccount({
-        email: email.trim(),
-        password: password.trim(),
-        adminName: adminName.trim(),
-      });
-
-      addStaff({
-        name: adminName.trim(),
-        staffId: email.trim(),
-        role: "Manager",
-        status: "active"
-      });
-
-      // 3. Login
-      login("admin", email.trim());
-      toast.success("Business registered successfully! Welcome to StockFlow.");
-      navigate("/admin/dashboard");
-    } catch (error) {
+      toast.success("Business registered successfully! Please sign in.", { id: "signup" });
+      navigate("/admin-login");
+    } catch (error: any) {
       console.error('Error during signup:', error);
-      toast.error("An error occurred during registration. Please try again.");
+      const errorMessage = error.message || "An error occurred during registration. Please try again.";
+      toast.error(errorMessage, { id: "signup" });
     }
   };
 
