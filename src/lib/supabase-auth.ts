@@ -3,8 +3,7 @@ import { supabase } from './supabase';
 // Sign up a new tenant with Supabase auth
 export const signUpTenant = async (email: string, password: string, businessName: string, location: string, adminName: string) => {
   try {
-    // Create Supabase auth user with metadata
-    // The database trigger will automatically create tenant, user, and subscription records
+    // 1. Create Supabase auth user
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -21,8 +20,65 @@ export const signUpTenant = async (email: string, password: string, businessName
     if (authError) throw authError;
     if (!authData.user) throw new Error('Failed to create user');
 
-    return { success: true, userId: authData.user.id };
-  } catch (error) {
+    // 2. Create tenant record
+    const { data: tenantData, error: tenantError } = await supabase
+      .from('tenants')
+      .insert({
+        business_name: businessName,
+        location: location,
+        currency: 'ZMK',
+        tax_rate: 16,
+        low_stock_threshold: 5,
+      })
+      .select()
+      .single();
+
+    if (tenantError) {
+      console.error('Tenant creation error:', tenantError);
+      throw new Error(`Failed to create tenant: ${tenantError.message}`);
+    }
+    if (!tenantData) throw new Error('Failed to create tenant');
+
+    // 3. Create user record linking auth user to tenant
+    const { error: userError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: email,
+        full_name: adminName,
+        tenant_id: tenantData.id,
+        role: 'admin',
+      });
+
+    if (userError) {
+      console.error('User creation error:', userError);
+      throw new Error(`Failed to create user record: ${userError.message}`);
+    }
+
+    // 4. Create subscription record
+    const now = new Date();
+    const trialEnd = new Date(now);
+    trialEnd.setDate(trialEnd.getDate() + 7);
+
+    const { error: subError } = await supabase
+      .from('subscriptions')
+      .insert({
+        tenant_id: tenantData.id,
+        tier: 'trial',
+        status: 'active',
+        trial_start_date: now.toISOString(),
+        trial_end_date: trialEnd.toISOString(),
+        monthly_fee: 200,
+        auto_renew: true,
+      });
+
+    if (subError) {
+      console.error('Subscription creation error:', subError);
+      throw new Error(`Failed to create subscription: ${subError.message}`);
+    }
+
+    return { success: true, tenantId: tenantData.id };
+  } catch (error: any) {
     console.error('Sign up error:', error);
     throw error;
   }
