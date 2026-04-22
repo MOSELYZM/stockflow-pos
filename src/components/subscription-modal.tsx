@@ -30,6 +30,7 @@ import {
   getSubscriptionStatusText,
   getFeatureAccess,
   redeemCode,
+  generateUserCode,
   type SubscriptionTier,
   type Subscription,
 } from "@/lib/store";
@@ -106,10 +107,13 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [activationCode, setActivationCode] = useState("");
   const [showRedeemForm, setShowRedeemForm] = useState(false);
   const [redeemCodeInput, setRedeemCodeInput] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [showAdminSection, setShowAdminSection] = useState(false);
+  const [generatedCode, setGeneratedCode] = useState("");
+  const [adminMonths, setAdminMonths] = useState(1);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -139,11 +143,12 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
 
     setTimeout(() => {
       try {
-        const result = processPayment(selectedPlan, months, paymentMethod, phoneNumber);
+        processPayment(selectedPlan, months, paymentMethod, phoneNumber);
 
-        toast.success("Payment successful! Your activation code is below.", { id: "payment" });
+        toast.success("Payment recorded! Contact admin to get your activation code.", { id: "payment" });
 
-        setActivationCode(result.activationCode);
+        const updatedSub = getSubscription();
+        setSubscription(updatedSub);
         setShowPaymentForm(false);
         setPhoneNumber("");
       } catch (error) {
@@ -154,8 +159,16 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
     }, 2000);
   };
 
+  const handleGenerateCode = () => {
+    setIsGenerating(true);
+    const code = generateUserCode(selectedPlan, adminMonths);
+    setGeneratedCode(code);
+    setIsGenerating(false);
+    toast.success("Code generated successfully!");
+  };
+
   const copyCodeToClipboard = () => {
-    navigator.clipboard.writeText(activationCode);
+    navigator.clipboard.writeText(generatedCode);
     toast.success("Activation code copied to clipboard!");
   };
 
@@ -226,36 +239,71 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           </Card>
         )}
 
-        {/* Activation Code Display */}
-        {activationCode && !showPaymentForm && !showRedeemForm && (
-          <Card className="border-success bg-success/5">
+        {/* Admin Section for Code Generation */}
+        {showAdminSection && (
+          <Card className="border-primary bg-primary/5">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-success">
+              <CardTitle className="flex items-center gap-2 text-primary">
                 <Key className="h-5 w-5" />
-                Your Activation Code
+                Admin: Generate Activation Code
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-background p-4 rounded-lg border-2 border-success/30">
-                <p className="text-3xl font-mono font-bold text-center tracking-wider">{activationCode}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Plan</Label>
+                  <Select value={selectedPlan} onValueChange={(v) => setSelectedPlan(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">Basic Plan</SelectItem>
+                      <SelectItem value="premium">Premium Plan</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Months</Label>
+                  <Select value={adminMonths.toString()} onValueChange={(v) => setAdminMonths(Number(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 Month</SelectItem>
+                      <SelectItem value="3">3 Months</SelectItem>
+                      <SelectItem value="6">6 Months</SelectItem>
+                      <SelectItem value="12">12 Months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button onClick={copyCodeToClipboard} className="flex-1 gap-2">
-                  <Copy className="h-4 w-4" />
-                  Copy Code
-                </Button>
-                <Button onClick={() => setActivationCode("")} variant="outline">
-                  Close
-                </Button>
-              </div>
-              <div className="bg-muted p-3 rounded-md text-sm">
-                <p className="font-medium text-foreground mb-1">Important:</p>
-                <ul className="text-muted-foreground list-disc list-inside space-y-0.5">
-                  <li>This code can only be used once</li>
-                  <li>It will only work on this device</li>
-                  <li>Save it in a safe place</li>
-                </ul>
-              </div>
+              <Button onClick={handleGenerateCode} className="w-full" disabled={isGenerating}>
+                {isGenerating ? "Generating..." : "Generate Code"}
+              </Button>
+              {generatedCode && (
+                <div className="space-y-3">
+                  <div className="bg-background p-4 rounded-lg border-2 border-primary/30">
+                    <p className="text-3xl font-mono font-bold text-center tracking-wider">{generatedCode}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={copyCodeToClipboard} className="flex-1 gap-2">
+                      <Copy className="h-4 w-4" />
+                      Copy Code
+                    </Button>
+                    <Button onClick={() => setGeneratedCode("")} variant="outline">
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="bg-muted p-3 rounded-md text-sm">
+                    <p className="font-medium text-foreground mb-1">Important:</p>
+                    <ul className="text-muted-foreground list-disc list-inside space-y-0.5">
+                      <li>This code can only be used once</li>
+                      <li>It will only work on the device where it's redeemed</li>
+                      <li>Give this code to the user after payment confirmation</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -295,7 +343,7 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           </Card>
         )}
 
-        {!showPaymentForm && !showRedeemForm && !activationCode ? (
+        {!showPaymentForm && !showRedeemForm && !generatedCode ? (
           <>
             {/* Plans */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -309,7 +357,7 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
                 >
                   {plan.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge variant="gradient" className="shine">Most Popular</Badge>
+                      <Badge className="bg-warning text-warning-foreground">Most Popular</Badge>
                     </div>
                   )}
                   <CardHeader>
@@ -352,6 +400,10 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
             {/* Subscribe Button */}
             {subscription?.tier === "trial" && (
               <div className="flex flex-col gap-3">
+                <Button onClick={() => setShowAdminSection(!showAdminSection)} variant="outline" className="w-full gap-2">
+                  <Key className="h-4 w-4" />
+                  {showAdminSection ? "Hide Admin Panel" : "Admin Panel"}
+                </Button>
                 <Button onClick={() => setShowRedeemForm(true)} variant="outline" className="w-full gap-2">
                   <Key className="h-4 w-4" />
                   Redeem Activation Code

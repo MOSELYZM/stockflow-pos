@@ -536,7 +536,7 @@ export const processPayment = (
   months: number,
   method: "MTN" | "AIRTEL" | "ZAMTEL" | "BANK",
   phoneNumber: string
-): { payment: PaymentRecord; activationCode: string } => {
+): PaymentRecord => {
   const sub = getSubscription();
   const amount = MONTHLY_FEE * months;
   const now = new Date();
@@ -551,9 +551,6 @@ export const processPayment = (
     status: "completed",
     monthsPaid: months,
   };
-
-  // Generate activation code
-  const activationCode = generateActivationCode();
 
   // Calculate new end date
   let endDate = new Date(now);
@@ -574,12 +571,44 @@ export const processPayment = (
     lastPaymentDate: now.toISOString(),
     paymentHistory: [...sub.paymentHistory, payment],
     deviceId: "", // Will be set when code is redeemed
-    activationCode,
+    activationCode: "", // Will be set by admin
     codeUsed: false,
   };
 
   setSingle(KEYS.subscription, updatedSub);
-  return { payment, activationCode };
+  return payment;
+};
+
+// Manually generate an activation code for a user (admin function)
+export const generateUserCode = (tier: SubscriptionTier, months: number): string => {
+  const code = generateActivationCode();
+  const now = new Date();
+  const sub = getSubscription();
+
+  // Calculate end date
+  let endDate = new Date(now);
+  if (sub.subscriptionEndDate && sub.status === "active") {
+    const currentEnd = new Date(sub.subscriptionEndDate);
+    if (currentEnd > now) {
+      endDate = currentEnd;
+    }
+  }
+  endDate.setMonth(endDate.getMonth() + months);
+
+  const updatedSub: Subscription = {
+    ...sub,
+    tier,
+    status: "active",
+    subscriptionStartDate: sub.subscriptionStartDate || now.toISOString(),
+    subscriptionEndDate: endDate.toISOString(),
+    lastPaymentDate: now.toISOString(),
+    deviceId: "",
+    activationCode: code,
+    codeUsed: false,
+  };
+
+  setSingle(KEYS.subscription, updatedSub);
+  return code;
 };
 
 // Redeem activation code
