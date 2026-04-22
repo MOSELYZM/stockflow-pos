@@ -27,29 +27,29 @@ const SplashScreen = ({ onComplete }: { onComplete: () => void }) => {
         fadeOut ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
-      <div className={`transition-all duration-700 ${fadeOut ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}>
-        <div className="relative mb-8">
+      <div className={`flex flex-col items-center justify-center transition-all duration-700 ${fadeOut ? "scale-90 opacity-0" : "scale-100 opacity-100"}`}>
+        <div className="relative mb-10">
           <div className="absolute inset-0 bg-white/20 blur-3xl rounded-full" />
           <img
             src={logo}
             alt="StockFlow Logo"
-            className="relative h-32 w-32 object-contain animate-pulse"
+            className="relative h-48 w-48 object-contain animate-pulse"
           />
         </div>
         
-        <h1 className="text-5xl font-bold text-white mb-3 tracking-tight">
+        <h1 className="text-6xl font-bold text-white mb-4 tracking-tight text-center">
           StockFlow
         </h1>
-        <p className="text-xl text-white/90 font-light mb-2">
+        <p className="text-2xl text-white/90 font-light mb-2 text-center">
           Point of Sale System
         </p>
-        <p className="text-sm text-white/70">
+        <p className="text-base text-white/70 text-center">
           Streamline Your Business
         </p>
       </div>
 
       {/* Loading indicator */}
-      <div className={`absolute bottom-20 transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}>
+      <div className={`absolute bottom-24 transition-opacity duration-500 ${fadeOut ? "opacity-0" : "opacity-100"}`}>
         <div className="flex gap-2">
           <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
           <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
