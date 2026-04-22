@@ -20,6 +20,8 @@ import {
   Users,
   BarChart3,
   Download,
+  Copy,
+  Key,
 } from "lucide-react";
 import {
   getSubscription,
@@ -27,6 +29,7 @@ import {
   getDaysRemaining,
   getSubscriptionStatusText,
   getFeatureAccess,
+  redeemCode,
   type SubscriptionTier,
   type Subscription,
 } from "@/lib/store";
@@ -103,6 +106,10 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [activationCode, setActivationCode] = useState("");
+  const [showRedeemForm, setShowRedeemForm] = useState(false);
+  const [redeemCodeInput, setRedeemCodeInput] = useState("");
+  const [isRedeeming, setIsRedeeming] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -132,25 +139,49 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
 
     setTimeout(() => {
       try {
-        const payment = processPayment(selectedPlan, months, paymentMethod, phoneNumber);
+        const result = processPayment(selectedPlan, months, paymentMethod, phoneNumber);
 
-        toast.success("Payment successful! Subscription activated.", { id: "payment" });
+        toast.success("Payment successful! Your activation code is below.", { id: "payment" });
 
-        const updatedSub = getSubscription();
-        setSubscription(updatedSub);
+        setActivationCode(result.activationCode);
         setShowPaymentForm(false);
         setPhoneNumber("");
-
-        // Reload to apply new permissions
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
       } catch (error) {
         toast.error("Payment failed. Please try again.", { id: "payment" });
       } finally {
         setIsProcessing(false);
       }
     }, 2000);
+  };
+
+  const copyCodeToClipboard = () => {
+    navigator.clipboard.writeText(activationCode);
+    toast.success("Activation code copied to clipboard!");
+  };
+
+  const handleRedeemCode = () => {
+    if (!redeemCodeInput || redeemCodeInput.length < 12) {
+      toast.error("Please enter a valid activation code");
+      return;
+    }
+
+    setIsRedeeming(true);
+    const result = redeemCode(redeemCodeInput);
+
+    if (result.success) {
+      toast.success(result.message);
+      setRedeemCodeInput("");
+      setShowRedeemForm(false);
+      const updatedSub = getSubscription();
+      setSubscription(updatedSub);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } else {
+      toast.error(result.message);
+    }
+
+    setIsRedeeming(false);
   };
 
   const daysRemaining = subscription ? getDaysRemaining() : 0;
@@ -195,7 +226,76 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
           </Card>
         )}
 
-        {!showPaymentForm ? (
+        {/* Activation Code Display */}
+        {activationCode && !showPaymentForm && !showRedeemForm && (
+          <Card className="border-success bg-success/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-success">
+                <Key className="h-5 w-5" />
+                Your Activation Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-background p-4 rounded-lg border-2 border-success/30">
+                <p className="text-3xl font-mono font-bold text-center tracking-wider">{activationCode}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={copyCodeToClipboard} className="flex-1 gap-2">
+                  <Copy className="h-4 w-4" />
+                  Copy Code
+                </Button>
+                <Button onClick={() => setActivationCode("")} variant="outline">
+                  Close
+                </Button>
+              </div>
+              <div className="bg-muted p-3 rounded-md text-sm">
+                <p className="font-medium text-foreground mb-1">Important:</p>
+                <ul className="text-muted-foreground list-disc list-inside space-y-0.5">
+                  <li>This code can only be used once</li>
+                  <li>It will only work on this device</li>
+                  <li>Save it in a safe place</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Code Redemption Form */}
+        {showRedeemForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Key className="h-5 w-5" />
+                Redeem Activation Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Enter your activation code</Label>
+                <Input
+                  placeholder="XXXX-XXXX-XXXX"
+                  value={redeemCodeInput}
+                  onChange={(e) => setRedeemCodeInput(e.target.value.toUpperCase())}
+                  className="font-mono uppercase"
+                  maxLength={14}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Format: XXXX-XXXX-XXXX
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleRedeemCode} className="flex-1" disabled={isRedeeming}>
+                  {isRedeeming ? "Redeeming..." : "Redeem Code"}
+                </Button>
+                <Button onClick={() => setShowRedeemForm(false)} variant="outline">
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {!showPaymentForm && !showRedeemForm && !activationCode ? (
           <>
             {/* Plans */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -251,14 +351,20 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
 
             {/* Subscribe Button */}
             {subscription?.tier === "trial" && (
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={() => onOpenChange(false)}>
-                  Continue Trial
+              <div className="flex flex-col gap-3">
+                <Button onClick={() => setShowRedeemForm(true)} variant="outline" className="w-full gap-2">
+                  <Key className="h-4 w-4" />
+                  Redeem Activation Code
                 </Button>
-                <Button onClick={handleSubscribe} size="lg">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Subscribe Now - K{MONTHLY_FEE}/month
-                </Button>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                    Continue Trial
+                  </Button>
+                  <Button onClick={handleSubscribe} size="lg">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Subscribe Now - K{MONTHLY_FEE}/month
+                  </Button>
+                </div>
               </div>
             )}
 

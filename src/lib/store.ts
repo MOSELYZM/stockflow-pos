@@ -351,6 +351,9 @@ export interface Subscription {
   monthlyFee: number; // in ZMW
   paymentHistory: PaymentRecord[];
   autoRenew: boolean;
+  deviceId: string; // Device ID to prevent multi-device login
+  activationCode?: string; // One-time activation code
+  codeUsed: boolean; // Whether the activation code has been used
 }
 
 export interface PaymentRecord {
@@ -366,6 +369,44 @@ export interface PaymentRecord {
 
 const TRIAL_DAYS = 7;
 const MONTHLY_FEE = 200; // ZMW
+const USED_CODES_KEY = "sf_v2_used_codes";
+const DEVICE_ID_KEY = "sf_v2_device_id";
+
+// Get or generate device ID
+export const getDeviceId = (): string => {
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY);
+  if (!deviceId) {
+    deviceId = genId();
+    localStorage.setItem(DEVICE_ID_KEY, deviceId);
+  }
+  return deviceId;
+};
+
+// Generate a unique activation code
+export const generateActivationCode = (): string => {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 12; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  // Format as XXXX-XXXX-XXXX
+  return `${code.slice(0, 4)}-${code.slice(4, 8)}-${code.slice(8, 12)}`;
+};
+
+// Check if a code has been used
+export const isCodeUsed = (code: string): boolean => {
+  const usedCodes = getSingle<string[]>(USED_CODES_KEY, []);
+  return usedCodes.includes(code);
+};
+
+// Mark a code as used
+export const markCodeUsed = (code: string) => {
+  const usedCodes = getSingle<string[]>(USED_CODES_KEY, []);
+  if (!usedCodes.includes(code)) {
+    usedCodes.push(code);
+    setSingle(USED_CODES_KEY, usedCodes);
+  }
+};
 
 function getSingle<T>(key: string, fallback: T | null = null): T | null {
   try {
@@ -397,6 +438,8 @@ export const initializeSubscription = (): Subscription => {
     monthlyFee: MONTHLY_FEE,
     paymentHistory: [],
     autoRenew: true,
+    deviceId: getDeviceId(),
+    codeUsed: false,
   };
 
   setSingle(KEYS.subscription, subscription);
@@ -423,6 +466,18 @@ export const getSubscription = (): Subscription => {
     const endDate = new Date(sub.subscriptionEndDate);
     if (now > endDate) {
       sub.status = "expired";
+      setSingle(KEYS.subscription, sub);
+    }
+  }
+
+  // Check device ID (for paid subscriptions)
+  if ((sub.tier === "basic" || sub.tier === "premium") && sub.status === "active") {
+    const currentDeviceId = getDeviceId();
+    if (sub.deviceId !== currentDeviceId) {
+      // Device mismatch - reset to trial
+      sub.status = "expired";
+      sub.tier = "trial";
+      sub.deviceId = currentDeviceId;
       setSingle(KEYS.subscription, sub);
     }
   }
@@ -481,7 +536,7 @@ export const processPayment = (
   months: number,
   method: "MTN" | "AIRTEL" | "ZAMTEL" | "BANK",
   phoneNumber: string
-): PaymentRecord => {
+): { payment: PaymentRecord; activationCode: string } => {
   const sub = getSubscription();
   const amount = MONTHLY_FEE * months;
   const now = new Date();
@@ -496,6 +551,9 @@ export const processPayment = (
     status: "completed",
     monthsPaid: months,
   };
+
+  // Generate activation code
+  const activationCode = generateActivationCode();
 
   // Calculate new end date
   let endDate = new Date(now);
@@ -515,10 +573,46 @@ export const processPayment = (
     subscriptionEndDate: endDate.toISOString(),
     lastPaymentDate: now.toISOString(),
     paymentHistory: [...sub.paymentHistory, payment],
+    deviceId: "", // Will be set when code is redeemed
+    activationCode,
+    codeUsed: false,
   };
 
   setSingle(KEYS.subscription, updatedSub);
-  return payment;
+  return { payment, activationCode };
+};
+
+// Redeem activation code
+export const redeemCode = (code: string): { success: boolean; message: string } => {
+  const sub = getSubscription();
+
+  // Check if code matches
+  if (sub.activationCode !== code) {
+    return { success: false, message: "Invalid activation code" };
+  }
+
+  // Check if code already used
+  if (sub.codeUsed) {
+    return { success: false, message: "This activation code has already been used" };
+  }
+
+  // Check if code is in global used codes list
+  if (isCodeUsed(code)) {
+    return { success: false, message: "This activation code has already been used on another device" };
+  }
+
+  // Validate code and activate subscription
+  const now = new Date();
+  const updatedSub: Subscription = {
+    ...sub,
+    deviceId: getDeviceId(),
+    codeUsed: true,
+  };
+
+  setSingle(KEYS.subscription, updatedSub);
+  markCodeUsed(code);
+
+  return { success: true, message: "Subscription activated successfully!" };
 };
 
 export const getFeatureAccess = (): {
