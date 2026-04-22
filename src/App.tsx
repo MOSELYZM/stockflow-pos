@@ -23,7 +23,6 @@ import UploadPage from "./pages/UploadPage";
 import SettingsPage from "./pages/SettingsPage";
 import StaffManagementPage from "./pages/StaffManagementPage";
 import ZRADashboard from "./pages/ZRADashboard";
-import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import AdminSignup from "./pages/AdminSignup";
 import NotFound from "./pages/NotFound";
 
@@ -52,7 +51,6 @@ function AnimatedRoutes() {
         <Route path="/admin/zra" element={<ZRADashboard />} />
         <Route path="/admin/settings" element={<SettingsPage />} />
         <Route path="/admin/staff" element={<StaffManagementPage />} />
-        <Route path="/super-admin" element={<SuperAdminDashboard />} />
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

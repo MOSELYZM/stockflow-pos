@@ -4,37 +4,39 @@ import { Shield, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInTenant, getCurrentUser } from "@/lib/supabase-auth";
-import { supabase } from "@/lib/supabase";
+import { login, getSettings, getAdminAccount } from "@/lib/store";
 import { toast } from "sonner";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const settings = getSettings();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
 
-    try {
-      toast.loading("Signing in...", { id: "login" });
-      
-      const result = await signInTenant(email.trim(), password.trim());
-      
-      if (result.success) {
-        toast.success(`Welcome back, ${result.user.full_name}!`, { id: "login" });
-        navigate("/admin/dashboard");
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      const errorMessage = error.message || "Invalid email or password";
-      toast.error(errorMessage, { id: "login" });
+    const admin = getAdminAccount();
+    
+    if (!admin || !admin.registered) {
+      toast.error("No business registered! Please register your business first.");
+      navigate("/admin-signup");
+      return;
     }
+
+    if (email.trim() !== admin.email || password.trim() !== admin.password) {
+      toast.error("Invalid Admin Email or Password");
+      return;
+    }
+
+    login("admin", email.trim());
+    toast.success(`Welcome back, ${admin.adminName}!`);
+    navigate("/admin/dashboard");
   };
 
   return (
@@ -56,7 +58,7 @@ const AdminLogin = () => {
             </div>
             <div className="text-center">
               <h1 className="text-2xl font-bold text-foreground">Welcome Back</h1>
-              <p className="text-sm text-muted-foreground mt-1">Sign in to your dashboard</p>
+              <p className="text-sm text-muted-foreground mt-1">Sign in to {settings.businessName}</p>
             </div>
           </div>
 
