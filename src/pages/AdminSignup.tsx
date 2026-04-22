@@ -17,7 +17,7 @@ const AdminSignup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleSignup = (e: React.FormEvent) => {
     e.preventDefault();
     if (!businessName.trim() || !location.trim() || !adminName.trim() || !email.trim() || !password.trim()) {
       toast.error("Please fill in all fields.");
@@ -26,7 +26,7 @@ const AdminSignup = () => {
 
     try {
       // Check if admin account already exists
-      const existingAdmin = await getAdminAccount();
+      const existingAdmin = getAdminAccount();
       if (existingAdmin && existingAdmin.registered) {
         toast.error("An admin account already exists. Please login instead.");
         navigate("/admin-login");
@@ -34,17 +34,17 @@ const AdminSignup = () => {
       }
 
       // 1. Save Business Settings
-      const settings = await getSettings();
-      await saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
+      const settings = getSettings();
+      saveSettings({ ...settings, businessName: businessName.trim(), location: location.trim() });
 
       // 2. Register Admin Account & Staff Role
-      await saveAdminAccount({
+      saveAdminAccount({
         email: email.trim(),
         password: password.trim(),
         adminName: adminName.trim(),
       });
 
-      await addStaff({
+      addStaff({
         name: adminName.trim(),
         staffId: email.trim(),
         role: "Manager",
