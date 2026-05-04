@@ -8,31 +8,31 @@ interface PageTransitionProps {
 export function PageTransition({ children }: PageTransitionProps) {
   const location = useLocation();
   const [displayLocation, setDisplayLocation] = useState(location);
-  const [transitionStage, setTransitionStage] = useState("fade-in");
+  const [transitionStage, setTransitionStage] = useState("enter");
 
   useEffect(() => {
     if (location !== displayLocation) {
-      setTransitionStage("fade-out");
+      setTransitionStage("exit");
     }
   }, [location, displayLocation]);
 
   useEffect(() => {
-    if (transitionStage === "fade-out") {
+    if (transitionStage === "exit") {
       const timeout = setTimeout(() => {
         setDisplayLocation(location);
-        setTransitionStage("fade-in");
-      }, 150);
+        setTransitionStage("enter");
+      }, 250);
       return () => clearTimeout(timeout);
     }
   }, [transitionStage, location]);
 
   return (
     <div
-      className={`transition-all duration-150 ease-in-out ${
-        transitionStage === "fade-in"
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-2"
-      }`}
+      className={
+        transitionStage === "enter"
+          ? "page-transition-enter"
+          : "page-transition-exit"
+      }
     >
       {children}
     </div>

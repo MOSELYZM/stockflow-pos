@@ -638,6 +638,36 @@
       transform: translateY(0);
     }
   }
+
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes page-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+    }
+  }
+
+  .page-transition-enter {
+    animation: page-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .page-transition-exit {
+    animation: page-exit 0.25s ease-in forwards;
+  }
 }
 
 @keyframes float {
