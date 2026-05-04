@@ -207,7 +207,7 @@ const StaffManagementPage = () => {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-w-[calc(100vw-2rem)] mx-2 sm:mx-0 max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingStaff ? "Edit Staff Member" : "Add Staff Member"}</DialogTitle>
           </DialogHeader>
@@ -260,7 +260,7 @@ const StaffManagementPage = () => {
       </Dialog>
 
       <Dialog open={isReportOpen} onOpenChange={setIsReportOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] flex flex-col">
+        <DialogContent className="sm:max-w-[600px] max-w-[calc(100vw-2rem)] mx-2 sm:mx-0 max-h-[90dvh] overflow-y-auto flex flex-col">
           <DialogHeader>
             <DialogTitle>{reportStaff?.name}'s Performance Report</DialogTitle>
           </DialogHeader>

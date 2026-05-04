@@ -43,7 +43,7 @@ const ExpensesPage = () => {
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add Expense</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-[calc(100vw-2rem)] mx-2 sm:mx-0 sm:max-w-md max-h-[90dvh] overflow-y-auto">
               <DialogHeader><DialogTitle>Add Expense</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1">
@@ -74,6 +74,7 @@ const ExpensesPage = () => {
         </div>
 
         <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -101,6 +102,7 @@ const ExpensesPage = () => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </AdminLayout>

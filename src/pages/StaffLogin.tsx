@@ -42,7 +42,7 @@ const StaffLogin = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4">
       <div className="animate-fade-in w-full max-w-sm">
         <div className="bg-card rounded-lg border border-border shadow-sm p-8">
           <div className="flex flex-col items-center gap-3 mb-8">

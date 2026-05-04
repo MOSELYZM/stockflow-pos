@@ -308,7 +308,7 @@ const ZRADashboard = () => {
 
       {/* ZRA Invoice Dialog */}
       <Dialog open={showInvoiceDialog} onOpenChange={setShowInvoiceDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-4xl max-h-[90dvh] overflow-y-auto mx-2 sm:mx-0">
           <DialogHeader>
             <DialogTitle>ZRA Compliant Invoice</DialogTitle>
           </DialogHeader>

@@ -64,30 +64,32 @@ const AdminDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex w-full overflow-hidden">
+      <div className="min-h-[100dvh] flex w-full overflow-hidden">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <header className="h-16 flex items-center justify-between px-4 lg:px-6 glass border-b border-white/20 shrink-0 z-30">
-            <div className="flex items-center gap-3">
+          <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-6 glass border-b border-white/20 shrink-0 z-30">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <SidebarTrigger />
-              <div>
-                <h1 className="text-lg font-bold text-foreground">{getGreeting()}, {userName} 👋</h1>
-                <p className="text-xs text-muted-foreground">{today}</p>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-lg font-bold text-foreground truncate">{getGreeting()}, {userName} 👋</h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground hidden sm:block">{today}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="gap-1.5 glass" onClick={doRefresh}>
-                <RefreshCw className="h-3.5 w-3.5" /> Refresh
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Button variant="outline" size="icon" className="sm:px-3 sm:w-auto sm:h-9 glass gap-0 sm:gap-1.5" onClick={doRefresh}>
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
-              <Button size="sm" variant="gradient" className="gap-1.5 shine" onClick={() => navigate("/admin/pos")}>
-                <Plus className="h-3.5 w-3.5" /> New Sale
+              <Button size="icon" variant="gradient" className="sm:px-3 sm:w-auto sm:h-9 shine gap-0 sm:gap-1.5" onClick={() => navigate("/admin/pos")}>
+                <Plus className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">New Sale</span>
               </Button>
             </div>
           </header>
 
-          <main className="flex-1 p-4 lg:p-6 space-y-6 overflow-y-auto">
+          <main className="flex-1 p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 overflow-y-auto">
             {/* Stat Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-container" style={{ "--stagger-delay": "75ms" } as React.CSSProperties}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 stagger-container" style={{ "--stagger-delay": "75ms" } as React.CSSProperties}>
               {statCards.map((s) => (
                 <Card
                   key={s.label}
@@ -138,7 +140,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
               <Card className="lg:col-span-2 glass-card border-0 hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -146,7 +148,7 @@ const AdminDashboard = () => {
                     7-Day Sales vs Expenses
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="h-72">
+                <CardContent className="h-56 sm:h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={chartData}>
                       <XAxis dataKey="day" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
@@ -174,7 +176,7 @@ const AdminDashboard = () => {
                     Top Products (7 days)
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center h-72">
+                <CardContent className="flex flex-col items-center justify-center h-56 sm:h-72">
                   {topProducts.length > 0 ? (
                     <>
                       <ResponsiveContainer width="100%" height={180}>
@@ -215,7 +217,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Bottom Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               <Card className="animate-in fade-in slide-in-from-left-4 duration-700 hover:shadow-md transition-shadow">
                 <CardHeader className="pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-sm font-semibold">Recent Sales</CardTitle>

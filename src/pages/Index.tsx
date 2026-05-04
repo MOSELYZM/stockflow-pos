@@ -10,7 +10,7 @@ const Index = () => {
   const settings = getSettings();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 relative overflow-hidden">
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-20">
         <ThemeToggle />

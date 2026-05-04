@@ -44,7 +44,7 @@ const CustomersPage = () => {
             <DialogTrigger asChild>
               <Button size="sm" className="gap-1.5"><Plus className="h-3.5 w-3.5" /> Add Customer</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-[calc(100vw-2rem)] mx-2 sm:mx-0 sm:max-w-md max-h-[90dvh] overflow-y-auto">
               <DialogHeader><DialogTitle>Add Customer</DialogTitle></DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="space-y-1">

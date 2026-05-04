@@ -30,7 +30,7 @@ const StaffDashboard = () => {
   const filteredProducts = search.trim() === "" ? [] : products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100dvh] bg-background">
       {/* Header */}
       <header className="h-14 flex items-center justify-between border-b border-border px-4 lg:px-6 bg-card">
         <div className="flex items-center gap-3">

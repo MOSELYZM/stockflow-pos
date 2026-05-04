@@ -32,13 +32,13 @@ const SalesHistoryPage = () => {
           <p className="text-sm text-muted-foreground">{filtered.length} transactions · Total: ZMK {totalRevenue.toFixed(2)}</p>
         </div>
 
-        <div className="flex gap-3">
-          <div className="relative flex-1 max-w-sm">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 sm:max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search by customer or ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
           <Select value={methodFilter} onValueChange={setMethodFilter}>
-            <SelectTrigger className="w-36"><SelectValue placeholder="Payment" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Payment" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Methods</SelectItem>
               <SelectItem value="CASH">Cash</SelectItem>
@@ -49,6 +49,7 @@ const SalesHistoryPage = () => {
         </div>
 
         <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50">
@@ -96,6 +97,7 @@ const SalesHistoryPage = () => {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </AdminLayout>

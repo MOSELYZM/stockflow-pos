@@ -204,37 +204,37 @@ const POSPage = () => {
 
   return (
     <AdminLayout>
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-7rem)]">
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 min-h-[calc(100dvh-7rem)]">
         {/* Products */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
+        <div className="md:col-span-2 flex flex-col gap-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search products by name or SKU..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
           </div>
-          <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 gap-3 content-start stagger-container" style={{ "--stagger-delay": "40ms" } as React.CSSProperties}>
+          <div className="flex-1 overflow-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 content-start stagger-container pb-safe" style={{ "--stagger-delay": "40ms" } as React.CSSProperties}>
             {filtered.map((p) => (
               <button
                 key={p.id}
                 onClick={() => addToCart(p)}
                 disabled={p.stock <= 0}
-                className="bg-card border border-border rounded-xl p-3 text-left hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none group hover-lift-shadow"
+                className="bg-card border border-border rounded-xl p-2 sm:p-3 text-left hover:border-primary/50 hover:shadow-lg hover:-translate-y-1 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none group hover-lift-shadow active:scale-[0.98] touch-manipulation"
               >
                 {p.image ? (
                   <img 
                     src={p.image} 
                     alt={p.name}
-                    className="h-16 w-full object-cover rounded-lg mb-2 group-hover:scale-[1.02] transition-transform duration-200"
+                    className="h-12 sm:h-16 w-full object-cover rounded-lg mb-1 sm:mb-2 group-hover:scale-[1.02] transition-transform duration-200"
                   />
                 ) : (
-                  <div className="h-16 w-full rounded-lg bg-muted flex items-center justify-center mb-2">
-                    <Package className="h-8 w-8 text-muted-foreground/40" />
+                  <div className="h-12 sm:h-16 w-full rounded-lg bg-muted flex items-center justify-center mb-1 sm:mb-2">
+                    <Package className="h-6 sm:h-8 w-6 sm:w-8 text-muted-foreground/40" />
                   </div>
                 )}
-                <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
-                <p className="text-xs text-muted-foreground font-mono">{p.sku}</p>
-                <div className="flex items-center justify-between mt-2">
+                <p className="text-xs sm:text-sm font-semibold text-foreground truncate">{p.name}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-mono">{p.sku}</p>
+                <div className="flex items-center justify-between mt-1 sm:mt-2">
                   <span className="text-sm font-bold text-foreground">ZMK {p.price}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium transition-all duration-200 hover:scale-105 ${p.stock <= p.reorderLevel ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
+                  <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium transition-all duration-200 hover:scale-105 ${p.stock <= p.reorderLevel ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
                     {p.stock} left
                   </span>
                 </div>
@@ -297,14 +297,14 @@ const POSPage = () => {
       </div>
     {/* Checkout Dialog */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-w-[calc(100vw-2rem)] mx-2 sm:mx-0 max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Complete Sale</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-between font-medium">
               <span>Total Amount:</span>
-              <span className="text-xl font-bold">ZMK {total.toFixed(2)}</span>
+              <span className="text-lg sm:text-xl font-bold">ZMK {total.toFixed(2)}</span>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Payment Method</label>

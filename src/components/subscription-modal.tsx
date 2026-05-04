@@ -154,7 +154,7 @@ export function SubscriptionModal({ open, onOpenChange }: SubscriptionModalProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-4xl max-h-[90dvh] overflow-y-auto mx-2 sm:mx-0">
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Crown className="h-6 w-6 text-warning" />
