@@ -21,7 +21,7 @@ export function PageTransition({ children }: PageTransitionProps) {
       const timeout = setTimeout(() => {
         setDisplayLocation(location);
         setTransitionStage("enter");
-      }, 250);
+      }, 120);
       return () => clearTimeout(timeout);
     }
   }, [transitionStage, location]);

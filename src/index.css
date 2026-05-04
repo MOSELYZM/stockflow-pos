@@ -642,7 +642,7 @@
   @keyframes page-enter {
     from {
       opacity: 0;
-      transform: translateY(12px) scale(0.98);
+      transform: translateY(8px) scale(0.98);
     }
     to {
       opacity: 1;
@@ -657,16 +657,16 @@
     }
     to {
       opacity: 0;
-      transform: translateY(-8px) scale(0.98);
+      transform: translateY(-4px) scale(0.99);
     }
   }
 
   .page-transition-enter {
-    animation: page-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: page-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .page-transition-exit {
-    animation: page-exit 0.25s ease-in forwards;
+    animation: page-exit 0.12s ease-out forwards;
   }
 }
 
